@@ -20,34 +20,34 @@ def ReplaceAnimationsWithMatchingNames(dest_tag_path, src_tag_path, safe, copy_i
             if (dest_anim_array.STEPTREE[i].name == src_anim_array.STEPTREE[j].name):
                 if (copy_indices == True):
                     sys.exit("copy_indices is not implemented.")
-                else:
-                    if (safe == True):
-                        if (dest_anim_array.STEPTREE[i].frame_count != src_anim_array.STEPTREE[j].frame_count):
-                            merge_them = input("Found a name match for animation " + dest_anim_array.STEPTREE[i].name
-                                  + " but the frame counts don't match " + dest_anim_array.STEPTREE[i].frame_count
-                                  + "!=" + src_anim_array.STEPTREE[j].frame_count + ". Do you still want to copy the data? y/n: ")
-                            if merge_them != "y":
-                                continue
+                
+                if (safe == True):
+                    if (dest_anim_array.STEPTREE[i].frame_count != src_anim_array.STEPTREE[j].frame_count):
+                        merge_them = input("Found a name match for animation " + dest_anim_array.STEPTREE[i].name
+                              + " but the frame counts don't match " + dest_anim_array.STEPTREE[i].frame_count
+                              + "!=" + src_anim_array.STEPTREE[j].frame_count + ". Do you still want to copy the data? y/n: ")
+                        if merge_them != "y":
+                            continue
                             
-                    if (src_anim_array.STEPTREE[j].frame_count <= 0):
-                        continue
+                if (src_anim_array.STEPTREE[j].frame_count <= 0):
+                    continue
                     
-                    dest_anim_array.STEPTREE[i].frame_count = src_anim_array.STEPTREE[j].frame_count
-                    dest_anim_array.STEPTREE[i].flags = src_anim_array.STEPTREE[j].flags
-                    dest_anim_array.STEPTREE[i].unknown_sint16 = src_anim_array.STEPTREE[j].unknown_sint16
-                    dest_anim_array.STEPTREE[i].unknown_float = src_anim_array.STEPTREE[j].unknown_float
-                    dest_anim_array.STEPTREE[i].frame_info = src_anim_array.STEPTREE[j].frame_info
-                    dest_anim_array.STEPTREE[i].trans_flags0 = src_anim_array.STEPTREE[j].trans_flags0
-                    dest_anim_array.STEPTREE[i].trans_flags1 = src_anim_array.STEPTREE[j].trans_flags1
-                    dest_anim_array.STEPTREE[i].rot_flags0 = src_anim_array.STEPTREE[j].rot_flags0
-                    dest_anim_array.STEPTREE[i].rot_flags1 = src_anim_array.STEPTREE[j].rot_flags1
-                    dest_anim_array.STEPTREE[i].scale_flags0 = src_anim_array.STEPTREE[j].scale_flags0
-                    dest_anim_array.STEPTREE[i].scale_flags1 = src_anim_array.STEPTREE[j].scale_flags1
-                    dest_anim_array.STEPTREE[i].offset_to_compressed_data = src_anim_array.STEPTREE[j].offset_to_compressed_data
-                    dest_anim_array.STEPTREE[i].default_data = src_anim_array.STEPTREE[j].default_data
-                    dest_anim_array.STEPTREE[i].frame_data = src_anim_array.STEPTREE[j].frame_data
+                dest_anim_array.STEPTREE[i].frame_count = src_anim_array.STEPTREE[j].frame_count
+                dest_anim_array.STEPTREE[i].flags = src_anim_array.STEPTREE[j].flags
+                dest_anim_array.STEPTREE[i].unknown_sint16 = src_anim_array.STEPTREE[j].unknown_sint16
+                dest_anim_array.STEPTREE[i].unknown_float = src_anim_array.STEPTREE[j].unknown_float
+                dest_anim_array.STEPTREE[i].frame_info = src_anim_array.STEPTREE[j].frame_info
+                dest_anim_array.STEPTREE[i].trans_flags0 = src_anim_array.STEPTREE[j].trans_flags0
+                dest_anim_array.STEPTREE[i].trans_flags1 = src_anim_array.STEPTREE[j].trans_flags1
+                dest_anim_array.STEPTREE[i].rot_flags0 = src_anim_array.STEPTREE[j].rot_flags0
+                dest_anim_array.STEPTREE[i].rot_flags1 = src_anim_array.STEPTREE[j].rot_flags1
+                dest_anim_array.STEPTREE[i].scale_flags0 = src_anim_array.STEPTREE[j].scale_flags0
+                dest_anim_array.STEPTREE[i].scale_flags1 = src_anim_array.STEPTREE[j].scale_flags1
+                dest_anim_array.STEPTREE[i].offset_to_compressed_data = src_anim_array.STEPTREE[j].offset_to_compressed_data
+                dest_anim_array.STEPTREE[i].default_data = src_anim_array.STEPTREE[j].default_data
+                dest_anim_array.STEPTREE[i].frame_data = src_anim_array.STEPTREE[j].frame_data
 
-                    print("Copied data to #" + str(i) + " " + dest_anim_array.STEPTREE[j].name + " from #" + str(j) + " " + src_anim_array.STEPTREE[j].name)
+                print("Copied data to #" + str(i) + " " + dest_anim_array.STEPTREE[j].name + " from #" + str(j) + " " + src_anim_array.STEPTREE[j].name)
         
     dest_tag.serialize(temp=False, backup=True)
     src_tag.serialize(temp=True, backup=False)

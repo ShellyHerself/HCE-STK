@@ -29,8 +29,8 @@ def BuildCondensedShaderBlock(shaders_block):
     condensed_shader_ids = list(set(shader_ids))
 
     new_shaders = []
-    for i in range(len(condensed_shader_ids)):
-        new_shaders.append(shaders[condensed_shader_ids[i]])
+    for condensed_shader_id in condensed_shader_ids:
+        new_shaders.append(shaders[condensed_shader_id])
     
     new_shader_ids = [0] * len(shader_ids)
     for i in range(len(shader_ids)):
@@ -47,10 +47,10 @@ def BuildCondensedShaderBlock(shaders_block):
 def TranslateGeometryPartShaderIds(geometries_block, translation_list):
     geometries = geometries_block.STEPTREE
     
-    for i in range(len(geometries)):
-        parts = geometries[i].parts.STEPTREE
-        for j in range(len(parts)):
-            parts[j].shader_index = translation_list[parts[j].shader_index]
+    for geometry in geometries:
+        parts = geometry.parts.STEPTREE
+        for part in parts:
+            part.shader_index = translation_list[part.shader_index]
             
             
       
@@ -58,11 +58,11 @@ def TranslateGeometryPartShaderIds(geometries_block, translation_list):
 def TranslatePartNodeIds(part_steptree_entry, translation_list):
     verts = part_steptree_entry.uncompressed_vertices.STEPTREE
     
-    for k in range(len(verts)):
-        verts[k].node_0_index = translation_list[verts[k].node_0_index]
-        verts[k].node_1_index = translation_list[verts[k].node_1_index]
-        if (verts[k].node_1_weight == 0):
-            verts[k].node_1_index = 0
+    for vert in verts:
+        vert.node_0_index = translation_list[vert.node_0_index]
+        vert.node_1_index = translation_list[vert.node_1_index]
+        if (vert.node_1_weight == 0):
+            vert.node_1_index = 0
     
     part_steptree_entry.compressed_vertices.STEPTREE.clear()
 
@@ -76,22 +76,23 @@ def ModelCondenseShaders(model_tag):
     model.shaders.STEPTREE[:] = new_shaders[0]
     
     TranslateGeometryPartShaderIds(model.geometries, new_shaders[1])
+    
+    
+    
 
-    
-    
-    
 def ModelRemoveLocalNodes(model_tag):
     model = model_tag.data.tagdata
     geometries = model.geometries.STEPTREE
     
-    for i in range(len(geometries)):
-        parts = geometries[i].parts.STEPTREE
-        for j in range(len(parts)):
-            if (parts[j].flags.ZONER):
-                TranslatePartNodeIds(parts[j], parts[j].local_nodes)
-                parts[j].local_nodes.clear()
-                parts[j].flags.ZONER = False
-
+    for geometry in geometries:
+        parts = geometry.parts.STEPTREE
+        for part in parts:
+            if (part.flags.ZONER):
+                TranslatePartNodeIds(part, part.local_nodes)
+                part.local_nodes.clear()
+                part.flags.ZONER = False
+                
+    model.flags.parts_have_local_nodes = False
                 
 # Controls the calling of all the functions. Use this to ensure that all 
 # required steps are done for the task you want executed.

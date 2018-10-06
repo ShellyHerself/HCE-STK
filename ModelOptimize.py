@@ -116,13 +116,13 @@ def CombinePartsFromList(list):
                     if triangle.v2_index != -1:
                         current_strip.append(triangle.v2_index+current_offset)
         # if the number of triangles in this strip is uneven we need to copy the last vert
-        if len(current_strip)%2 == 1 and i < len(list):
+        if len(current_strip)%2 == 1 and i < len(list)-1:
             current_strip.append(current_strip[len(current_strip)-1])
         # if the strip isn't the first copy the first vert to properly connect it to the one before
         if (i != 0):
             current_strip.insert(0, current_strip[0])
         # if the strip is the last strip don't add a copy of the last strip point
-        if (i < len(list)):
+        if (i < len(list)-1):
             current_strip.append(current_strip[len(current_strip)-1])
 
         # add the current chain to the main chain

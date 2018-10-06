@@ -38,7 +38,7 @@ def BuildCondensedShaderBlock(shaders_block):
     new_shader_ids = [0] * len(shader_ids)
     for i in range(len(shader_ids)):
         for j in range(len(condensed_shader_ids)):
-            if (shader_ids[i] == condensed_shader_ids[j]):
+            if shader_ids[i] == condensed_shader_ids[j]:
                 new_shader_ids[i] = j
                 break
     
@@ -80,7 +80,7 @@ def GroupGeometryPartsByShader(geometry, shaders_block):
     for i in range(shader_count):
         current_list = []
         for part in parts:
-            if (part.shader_index == i):
+            if part.shader_index == i:
                 current_list.append(part)
                 
         groups.append(current_list)
@@ -119,10 +119,10 @@ def CombinePartsFromList(list):
         if len(current_strip)%2 == 1 and i < len(list)-1:
             current_strip.append(current_strip[len(current_strip)-1])
         # if the strip isn't the first copy the first vert to properly connect it to the one before
-        if (i != 0):
+        if i != 0:
             current_strip.insert(0, current_strip[0])
         # if the strip is the last strip don't add a copy of the last strip point
-        if (i < len(list)-1):
+        if i < len(list)-1:
             current_strip.append(current_strip[len(current_strip)-1])
 
         # add the current chain to the main chain
@@ -209,7 +209,7 @@ def ModelRemoveLocalNodes(model_tag):
     for geometry in geometries:
         parts = geometry.parts.STEPTREE
         for part in parts:
-            if (part.flags.ZONER):
+            if part.flags.ZONER:
                 TranslatePartNodeIds(part, part.local_nodes)
                 part.local_nodes.clear()
                 part.flags.ZONER = False

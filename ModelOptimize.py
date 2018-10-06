@@ -179,11 +179,7 @@ def BuildPartList(groups):
     parts = []
     for group in groups:
         if (len(group) > 0):
-            if (len(group) > 1):
-                parts.append(CombinePartsFromList(group))
-            else:
-                parts.append(group[0])
-            
+            parts.append(CombinePartsFromList(group))
     return parts
             
             

@@ -109,21 +109,21 @@ def CombinePartsFromList(list):
         current_strip = []
         # convert the 'triangles' to individual triangle strip points
         for triangle in triangles:
-            if triangle.v0_index != -1:
-                current_strip.append(triangle.v0_index+current_offset)
-                if triangle.v1_index != -1:
-                    current_strip.append(triangle.v1_index+current_offset)
-                    if triangle.v2_index != -1:
-                        current_strip.append(triangle.v2_index+current_offset)
+            current_strip.extend((triangle.v0_index + current_offset,
+                                  triangle.v1_index + current_offset,
+                                  triangle.v2_index + current_offset))
+        # remove -1s at the end, but check if < current_offset as we added that to them
+        while current_strip and current_strip[-1] < current_offset:
+            current_strip.pop(-1)
         # if the number of triangles in this strip is uneven we need to copy the last vert
         if len(current_strip)%2 == 1 and i < len(list)-1:
-            current_strip.append(current_strip[len(current_strip)-1])
+            current_strip.append(current_strip[-1])
         # if the strip isn't the first copy the first vert to properly connect it to the one before
         if i != 0:
             current_strip.insert(0, current_strip[0])
         # if the strip is the last strip don't add a copy of the last strip point
         if i < len(list)-1:
-            current_strip.append(current_strip[len(current_strip)-1])
+            current_strip.append(current_strip[-1])
 
         # add the current chain to the main chain
         triangle_strip_chain.extend(current_strip)
@@ -165,9 +165,8 @@ def CombinePartsFromList(list):
     tris = new_part.triangles.STEPTREE
     for i in range(0, len(triangle_strip_chain), 3):
         tris.append()
-        tris[len(tris)-1].v0_index = triangle_strip_chain[i]
-        tris[len(tris)-1].v1_index = triangle_strip_chain[i+1]
-        tris[len(tris)-1].v2_index = triangle_strip_chain[i+2]
+        tris[-1][:] = triangle_strip_chain[i : i+3]
+    
     
     return new_part
     

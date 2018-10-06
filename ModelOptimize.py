@@ -71,7 +71,7 @@ def TranslatePartNodeIds(part_steptree_entry, translation_list):
 
 
     
-# Used for making the lists that are used to build new condensed geometries
+# Takes a geometry and sorts all of it's parts into subgroups based on what shader they use.
 def GroupGeometryPartsByShader(geometry, shaders_block):
     shader_count = len(shaders_block.STEPTREE)
     
@@ -89,7 +89,7 @@ def GroupGeometryPartsByShader(geometry, shaders_block):
     
     
     
-    
+# Takes a list of geometry parts, merges all their geometry, and returns the resulting part.
 def CombinePartsFromList(list):
     current_offset = 0
     
@@ -164,7 +164,7 @@ def CombinePartsFromList(list):
     
     
     
-    
+# Takes groups of parts sorted by shader, condenses them by shader, and returns the resulting parts.
 def BuildPartList(groups):
     
     parts = []
@@ -184,7 +184,7 @@ def BuildPartList(groups):
 
 
 
-
+# Gets rid of all duplicate shaders without breaking shader indices.
 def ModelCondenseShaders(model_tag):
     model = model_tag.data.tagdata
 
@@ -195,7 +195,8 @@ def ModelCondenseShaders(model_tag):
     
     
     
-
+# Removes all local nodes by turning the setting off in the geometry parts
+# and translating their node indices to absolute.
 def ModelRemoveLocalNodes(model_tag):
     model = model_tag.data.tagdata
     geometries = model.geometries.STEPTREE
@@ -212,7 +213,7 @@ def ModelRemoveLocalNodes(model_tag):
 
     
     
-    
+# Reduces the number of drawcalls per region by merging geometry parts that use the same shader.
 def ModelMergeGeometryPartsWithIdenticalShaderIds(model_tag):
     model = model_tag.data.tagdata
     geometries = model.geometries.STEPTREE
@@ -225,7 +226,7 @@ def ModelMergeGeometryPartsWithIdenticalShaderIds(model_tag):
         
 
 # Controls the calling of all the functions. Use this to ensure that all 
-# required steps are done for the task you want executed.
+# required steps are done for the tasks you want executed.
 def ModelOptimize(model_tag, do_output, condense_shaders, remove_local_nodes, condense_parts):
     model = model_tag.data.tagdata
     # setup

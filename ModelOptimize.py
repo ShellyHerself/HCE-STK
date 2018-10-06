@@ -100,6 +100,7 @@ def CombinePartsFromList(list):
     combined_verts = []
     triangle_strip_chain = []
     
+    # loop through all parts in the list
     for i in range(len(list)):
         triangles = list[i].triangles.STEPTREE
         verts = list[i].uncompressed_vertices.STEPTREE
@@ -149,16 +150,24 @@ def CombinePartsFromList(list):
     new_part.centroid_translation.y /= sum(vert_counts)
     new_part.centroid_translation.z /= sum(vert_counts)
     
+    # assign our set of verts to the uncompressed vertices block
     new_part.uncompressed_vertices.STEPTREE[:] = combined_verts
-
+    
+    # the triangles struct we want to fit the strip into 
+    # requires the left over spots to be filled with -1s.
+    # we mod 3 a second time because we don't want the 
+    # struct to end in 3 -1s.
+    number_of_required_extra_neg_ones = (3 - len(triangle_strip_chain)%3)%3
+    for i in range(number_of_required_extra_neg_ones):
+        triangle_strip_chain.append(-1)
+        
+    # convert the strip into sets of 3 strip verts per 'triangle'
     tris = new_part.triangles.STEPTREE
     for i in range(0, len(triangle_strip_chain), 3):
         tris.append()
         tris[len(tris)-1].v0_index = triangle_strip_chain[i]
-        if (i+1 < len(triangle_strip_chain)):
-            tris[len(tris)-1].v1_index = triangle_strip_chain[i+1]
-            if (i+2 < len(triangle_strip_chain)):
-                tris[len(tris)-1].v2_index = triangle_strip_chain[i+2]
+        tris[len(tris)-1].v1_index = triangle_strip_chain[i+1]
+        tris[len(tris)-1].v2_index = triangle_strip_chain[i+2]
     
     return new_part
     

@@ -259,7 +259,7 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     
     #Initialise startup arguments
-    parser = ArgumentParser(description='Halo Gbxmodel optimizer. Made to optimize the model for render speed. [Does not remove triangles.]')
+    parser = ArgumentParser(description='Halo Gbxmodel optimizer. Made to optimize the model for render speed.')
     parser.add_argument('-s', '--remove-duplicate-shaders', dest='remove_shader_dupes', action='store_const',
                         const=True, default=False,
                         help='Removes duplicate shaders in the model tag without breaking indices.')
@@ -268,8 +268,7 @@ if __name__ == '__main__':
                         help='Rereferences all local nodes to use absolute nodes.')
     parser.add_argument('-p', '--condense-geometry-parts', dest='condense_geometry_parts', action='store_const',
                         const=True, default=False,
-                        help='Rereferences all local nodes to use absolute nodes.')
-    
+                        help='For each geometry combines all parts that use the same shader. (Automatically enables --remove-duplicate-shaders and --remove-local-nodes)')
     parser.add_argument('model_tag', metavar='model_tag', type=str,
                         help='The tag we want to operate on.')
     args = parser.parse_args()

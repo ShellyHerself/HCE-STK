@@ -2,8 +2,8 @@ from reclaimer.hek.defs.mod2 import mod2_def
 from reclaimer.hek.defs.mod2 import part as part_desc
 from supyr_struct.defs.block_def import BlockDef
 part_def = BlockDef(part_desc, endian=">")
+import sys
 import copy
-import math
 mod2_ext = ".gbxmodel"
 
 # Returns a list of indices for each shader. If there is more than one entry for the same shader
@@ -289,5 +289,6 @@ if __name__ == '__main__':
     ModelOptimize(model_tag, True, args.remove_shader_dupes, args.remove_local_nodes, args.condense_geometry_parts)
     
     print("Saving model tag...", end='')
+    sys.stdout.flush()
     model_tag.serialize(backup=True, temp=False)
     print("finished\n")

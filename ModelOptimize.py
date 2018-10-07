@@ -58,7 +58,7 @@ def TranslateGeometryPartShaderIds(geometries_block, translation_list):
 
 
 # Uses the translation_list to determine which old node id corresponds to which new node id.
-# Edits the given part_STEPTREE directly. 
+# Edits the given part_steptree_entry directly. 
 def TranslatePartNodeIds(part_steptree_entry, translation_list):
     verts = part_steptree_entry.uncompressed_vertices.STEPTREE
     

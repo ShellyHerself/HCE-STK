@@ -251,9 +251,16 @@ def ModelMergeGeometryPartsWithIdenticalShaderIds(model_tag):
     geometries = model.geometries.STEPTREE
     shaders = model.shaders
     
+    original_part_count = 0
+    new_part_count = 0
+    
     for geometry in geometries:
+        original_part_count += len(geometry.parts.STEPTREE)
         geometry.parts.STEPTREE[:] = BuildPartList(GroupGeometryPartsByShader(geometry, shaders))
-
+        new_part_count += len(geometry.parts.STEPTREE)
+        
+    return original_part_count, new_part_count
+        
         
         
 
@@ -261,9 +268,13 @@ def ModelRemoveDuplicateVertices(model_tag):
     model = model_tag.data.tagdata
     geometries = model.geometries.STEPTREE
     
+    original_vert_count = 0
+    new_vert_count = 0
+    
     for geometry in geometries:
         parts = geometry.parts.STEPTREE
         for part in parts:
+            original_vert_count += len(part.uncompressed_vertices.STEPTREE)
             part.compressed_vertices.clear()
             new_verts = BuildCondensedVertexBlock(part.uncompressed_vertices)
             part.uncompressed_vertices.STEPTREE[:] = new_verts[0]
@@ -273,8 +284,11 @@ def ModelRemoveDuplicateVertices(model_tag):
                 if triangle.v0_index != -1:triangle.v0_index = new_verts[1][triangle.v0_index]
                 if triangle.v1_index != -1:triangle.v1_index = new_verts[1][triangle.v1_index]
                 if triangle.v2_index != -1:triangle.v2_index = new_verts[1][triangle.v2_index]
-                
-            
+            new_vert_count += len(part.uncompressed_vertices.STEPTREE)
+    
+    return original_vert_count, new_vert_count
+
+    
 # Controls the calling of all the functions. Use this to ensure that all 
 # required steps are done for the tasks you want executed.
 def ModelOptimize(model_tag, do_output, condense_shaders, remove_local_nodes, condense_parts, condense_verts):
@@ -312,20 +326,20 @@ def ModelOptimize(model_tag, do_output, condense_shaders, remove_local_nodes, co
             start = time.time()
             print("Condensing Geometry Parts...", end='')
             sys.stdout.flush()
-        ModelMergeGeometryPartsWithIdenticalShaderIds(model_tag)
+        part_counts = ModelMergeGeometryPartsWithIdenticalShaderIds(model_tag)
         if do_output:
             end = time.time()
-            print("done\n    Took", end-start, "seconds\n")
+            print("done", " - Reduced total part count from ", part_counts[0], " to ", part_counts[1],"\n    Took ", end-start, " seconds\n", sep='')
         
     if condense_verts:
         if do_output:
             start = time.time()
             print("Condensing Duplicate Vertices...", end='')
             sys.stdout.flush()
-        ModelRemoveDuplicateVertices(model_tag)
+        vert_counts = ModelRemoveDuplicateVertices(model_tag)
         if do_output:
             end = time.time()
-            print("done\n    Took", end-start, "seconds\n")
+            print("done", " - Reduced total vertex count from ", vert_counts[0], " to ", vert_counts[1],"\n    Took ", end-start, " seconds\n", sep='')
         
     
     

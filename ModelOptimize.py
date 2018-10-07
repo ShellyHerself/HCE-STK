@@ -184,6 +184,28 @@ def BuildPartList(groups):
             
             
             
+def BuildCondensedVertexBlock(vertices_block):
+    verts = vertices_block.STEPTREE
+    
+    new_verts = []
+    translation_list = []
+    for i in range(len(verts)):
+        found = False
+        for j in range(i):
+            if verts[i] == verts[j]:
+                found = True
+                translation_list.append(j)
+                break
+        
+        if not found:
+            new_verts.append(verts[i])
+            translation_list.append(len(new_verts)-1)
+            
+    return new_verts, translation_list
+
+
+
+
 #########################################################################
 
 
@@ -229,9 +251,26 @@ def ModelMergeGeometryPartsWithIdenticalShaderIds(model_tag):
         
         
 
+def ModelRemoveDuplicateVertices(model_tag):
+    model = model_tag.data.tagdata
+    geometries = model.geometries.STEPTREE
+    
+    for geometry in geometries:
+        parts = geometry.parts.STEPTREE
+        for part in parts:
+            new_verts = BuildCondensedVertexBlock(part.uncompressed_vertices)
+            part.uncompressed_vertices.STEPTREE[:] = new_verts[0]
+            
+            triangles = part.triangles.STEPTREE
+            for triangle in triangles:
+                if triangle.v0_index != -1:triangle.v0_index = new_verts[1][triangle.v0_index]
+                if triangle.v1_index != -1:triangle.v1_index = new_verts[1][triangle.v1_index]
+                if triangle.v2_index != -1:triangle.v2_index = new_verts[1][triangle.v2_index]
+                
+            
 # Controls the calling of all the functions. Use this to ensure that all 
 # required steps are done for the tasks you want executed.
-def ModelOptimize(model_tag, do_output, condense_shaders, remove_local_nodes, condense_parts):
+def ModelOptimize(model_tag, do_output, condense_shaders, remove_local_nodes, condense_parts, condense_verts):
     model = model_tag.data.tagdata
     # setup
     if condense_parts:
@@ -248,7 +287,6 @@ def ModelOptimize(model_tag, do_output, condense_shaders, remove_local_nodes, co
         if do_output:print("done", " - Reduced shader count from ", old_shaders_size, " to ", model.shaders.size, ".\n", sep='')
         
     if remove_local_nodes:
-        if do_output:print("Removing Local Nodes...", end='')
         if do_output:
             print("Removing Local Nodes...", end='')
             sys.stdout.flush()
@@ -256,11 +294,17 @@ def ModelOptimize(model_tag, do_output, condense_shaders, remove_local_nodes, co
         if do_output:print("done\n")
     
     if condense_parts:
-        if do_output:print("Condensing Geometry Parts...", end='')
         if do_output:
             print("Condensing Geometry Parts...", end='')
             sys.stdout.flush()
         ModelMergeGeometryPartsWithIdenticalShaderIds(model_tag)
+        if do_output:print("done\n")
+        
+    if condense_verts:
+        if do_output:
+            print("Condensing Duplicate Vertices...", end='')
+            sys.stdout.flush()
+        ModelRemoveDuplicateVertices(model_tag)
         if do_output:print("done\n")
         
     
@@ -281,6 +325,9 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--condense-geometry-parts', dest='condense_geometry_parts', action='store_const',
                         const=True, default=False,
                         help='For each geometry combines all parts that use the same shader. (Automatically enables --remove-duplicate-shaders and --remove-local-nodes)')
+    parser.add_argument('-v', '--remove-duplicate-vertices', dest='remove_duplicate_vertices', action='store_const',
+                        const=True, default=False,
+                        help='For each geometry combines all parts that use the same shader. (Automatically enables --remove-duplicate-shaders and --remove-local-nodes)')
     parser.add_argument('model_tag', metavar='model_tag', type=str,
                         help='The tag we want to operate on.')
     args = parser.parse_args()
@@ -293,7 +340,7 @@ if __name__ == '__main__':
     model_tag = mod2_def.build(filepath=(model_tag_path + mod2_ext))
     print("done\n")
 
-    ModelOptimize(model_tag, True, args.remove_shader_dupes, args.remove_local_nodes, args.condense_geometry_parts)
+    ModelOptimize(model_tag, True, args.remove_shader_dupes, args.remove_local_nodes, args.condense_geometry_parts, args.remove_duplicate_vertices)
     
     print("Saving model tag...", end='')
     sys.stdout.flush()

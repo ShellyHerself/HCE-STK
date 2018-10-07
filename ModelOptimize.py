@@ -242,17 +242,24 @@ def ModelOptimize(model_tag, do_output, condense_shaders, remove_local_nodes, co
     if condense_shaders: 
         if do_output:
             print("Condensing shaders block...", end='')
+            sys.stdout.flush()
             old_shaders_size = model.shaders.size
         ModelCondenseShaders(model_tag)
         if do_output:print("done", " - Reduced shader count from ", old_shaders_size, " to ", model.shaders.size, ".\n", sep='')
         
     if remove_local_nodes:
         if do_output:print("Removing Local Nodes...", end='')
+        if do_output:
+            print("Removing Local Nodes...", end='')
+            sys.stdout.flush()
         ModelRemoveLocalNodes(model_tag)
         if do_output:print("done\n")
     
     if condense_parts:
         if do_output:print("Condensing Geometry Parts...", end='')
+        if do_output:
+            print("Condensing Geometry Parts...", end='')
+            sys.stdout.flush()
         ModelMergeGeometryPartsWithIdenticalShaderIds(model_tag)
         if do_output:print("done\n")
         
@@ -282,6 +289,7 @@ if __name__ == '__main__':
     model_tag_path = GetAbsFilepath(args.model_tag, mod2_ext)
 
     print("\nLoading model " + model_tag_path + "...", end='')
+    sys.stdout.flush()
     model_tag = mod2_def.build(filepath=(model_tag_path + mod2_ext))
     print("done\n")
 

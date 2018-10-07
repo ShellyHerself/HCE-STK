@@ -4,6 +4,7 @@ from supyr_struct.defs.block_def import BlockDef
 part_def = BlockDef(part_desc, endian=">")
 import sys
 import copy
+import time
 mod2_ext = ".gbxmodel"
 
 # Returns a list of indices for each shader. If there is more than one entry for the same shader
@@ -280,32 +281,45 @@ def ModelOptimize(model_tag, do_output, condense_shaders, remove_local_nodes, co
     # actual execution
     if condense_shaders: 
         if do_output:
+            start = time.time()
             print("Condensing shaders block...", end='')
             sys.stdout.flush()
             old_shaders_size = model.shaders.size
         ModelCondenseShaders(model_tag)
-        if do_output:print("done", " - Reduced shader count from ", old_shaders_size, " to ", model.shaders.size, ".\n", sep='')
+        if do_output:
+            end = time.time()
+            print("done", " - Reduced shader count from ", old_shaders_size, " to ", model.shaders.size, ".", sep='')
+            print("    Took", end-start, "seconds\n")
         
     if remove_local_nodes:
         if do_output:
+            start = time.time()
             print("Removing Local Nodes...", end='')
             sys.stdout.flush()
         ModelRemoveLocalNodes(model_tag)
-        if do_output:print("done\n")
+        if do_output:
+            end = time.time()
+            print("done\n    Took", end-start, "seconds\n")
     
     if condense_parts:
         if do_output:
+            start = time.time()
             print("Condensing Geometry Parts...", end='')
             sys.stdout.flush()
         ModelMergeGeometryPartsWithIdenticalShaderIds(model_tag)
-        if do_output:print("done\n")
+        if do_output:
+            end = time.time()
+            print("done\n    Took", end-start, "seconds\n")
         
     if condense_verts:
         if do_output:
+            start = time.time()
             print("Condensing Duplicate Vertices...", end='')
             sys.stdout.flush()
         ModelRemoveDuplicateVertices(model_tag)
-        if do_output:print("done\n")
+        if do_output:
+            end = time.time()
+            print("done\n    Took", end-start, "seconds\n")
         
     
     

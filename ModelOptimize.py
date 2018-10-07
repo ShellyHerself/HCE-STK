@@ -189,23 +189,24 @@ def BuildCondensedVertexBlock(vertices_block):
     verts = vertices_block.STEPTREE
 
     new_verts = []
-    new_verts_quick_identifiers = []
+    verts_lists_by_quick_ids = dict()
     translation_list = []
 
-    for i in range(0, len(verts)):
-        quick_identifier = int((verts[i].position_x+verts[i].position_y+verts[i].position_z)*10000)
+    for i in range(len(verts)):
+        vert = verts[i]
+        quick_id = (vert.position_x, vert.position_y, vert.position_z)
         found = False
-        for j in range(len(new_verts_quick_identifiers)):
-            if quick_identifier == new_verts_quick_identifiers[j]:
-                if verts[i] == new_verts[j]:
+        if quick_id in verts_lists_by_quick_ids:
+            for other_vert, index in verts_lists_by_quick_ids[quick_id]:
+                if vert == other_vert:
                     found = True
-                    translation_list.append(j)
+                    translation_list.append(index)
                     break
         
         if not found:
-            new_verts.append(verts[i])
-            new_verts_quick_identifiers.append(quick_identifier)
-            translation_list.append(len(new_verts)-1)
+            verts_lists_by_quick_ids.setdefault(quick_id, []).append((vert, len(new_verts)))
+            translation_list.append(len(new_verts))
+            new_verts.append(vert)
             
     return new_verts, translation_list
 
@@ -276,14 +277,14 @@ def ModelRemoveDuplicateVertices(model_tag):
         for part in parts:
             original_vert_count += len(part.uncompressed_vertices.STEPTREE)
             part.compressed_vertices.clear()
-            new_verts = BuildCondensedVertexBlock(part.uncompressed_vertices)
-            part.uncompressed_vertices.STEPTREE[:] = new_verts[0]
+            new_verts, translation_list = BuildCondensedVertexBlock(part.uncompressed_vertices)
+            part.uncompressed_vertices.STEPTREE[:] = new_verts
             
             triangles = part.triangles.STEPTREE
             for triangle in triangles:
-                if triangle.v0_index != -1:triangle.v0_index = new_verts[1][triangle.v0_index]
-                if triangle.v1_index != -1:triangle.v1_index = new_verts[1][triangle.v1_index]
-                if triangle.v2_index != -1:triangle.v2_index = new_verts[1][triangle.v2_index]
+                if triangle.v0_index != -1:triangle.v0_index = translation_list[triangle.v0_index]
+                if triangle.v1_index != -1:triangle.v1_index = translation_list[triangle.v1_index]
+                if triangle.v2_index != -1:triangle.v2_index = translation_list[triangle.v2_index]
             new_vert_count += len(part.uncompressed_vertices.STEPTREE)
     
     return original_vert_count, new_vert_count

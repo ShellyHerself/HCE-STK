@@ -347,7 +347,7 @@ if __name__ == '__main__':
                         help='For each geometry combines all parts that use the same shader. (Automatically enables --remove-duplicate-shaders and --remove-local-nodes)')
     parser.add_argument('-v', '--remove-duplicate-vertices', dest='remove_duplicate_vertices', action='store_const',
                         const=True, default=False,
-                        help='For each geometry combines all parts that use the same shader. (Automatically enables --remove-duplicate-shaders and --remove-local-nodes)')
+                        help='For each geometry part removes all duplicate vertices.')
     parser.add_argument('model_tag', metavar='model_tag', type=str,
                         help='The tag we want to operate on.')
     args = parser.parse_args()

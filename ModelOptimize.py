@@ -259,6 +259,7 @@ def ModelRemoveDuplicateVertices(model_tag):
     for geometry in geometries:
         parts = geometry.parts.STEPTREE
         for part in parts:
+            part.compressed_vertices.clear()
             new_verts = BuildCondensedVertexBlock(part.uncompressed_vertices)
             part.uncompressed_vertices.STEPTREE[:] = new_verts[0]
             

@@ -187,19 +187,24 @@ def BuildPartList(groups):
             
 def BuildCondensedVertexBlock(vertices_block):
     verts = vertices_block.STEPTREE
-    
+
     new_verts = []
+    new_verts_quick_identifiers = []
     translation_list = []
-    for i in range(len(verts)):
+
+    for i in range(0, len(verts)):
+        quick_identifier = int((verts[i].position_x+verts[i].position_y+verts[i].position_z)*10000)
         found = False
-        for j in range(i):
-            if verts[i] == verts[j]:
-                found = True
-                translation_list.append(j)
-                break
+        for j in range(len(new_verts_quick_identifiers)):
+            if quick_identifier == new_verts_quick_identifiers[j]:
+                if verts[i] == new_verts[j]:
+                    found = True
+                    translation_list.append(j)
+                    break
         
         if not found:
             new_verts.append(verts[i])
+            new_verts_quick_identifiers.append(quick_identifier)
             translation_list.append(len(new_verts)-1)
             
     return new_verts, translation_list

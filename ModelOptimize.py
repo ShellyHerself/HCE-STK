@@ -55,10 +55,10 @@ def TranslateGeometryPartShaderIds(geometries_block, translation_list):
         parts = geometry.parts.STEPTREE
         for part in parts:
             part.shader_index = translation_list[part.shader_index]
-            
-            
-      
-      
+
+
+# Uses the translation_list to determine which old node id corresponds to which new node id.
+# Edits the given part_STEPTREE directly. 
 def TranslatePartNodeIds(part_steptree_entry, translation_list):
     verts = part_steptree_entry.uncompressed_vertices.STEPTREE
     
@@ -183,8 +183,8 @@ def BuildPartList(groups):
     return parts
             
             
-            
-            
+# Takes a list of vertices and makes a new list that has all duplicates remove and returns it,
+# and a translation list for fixing the triangles block.
 def BuildCondensedVertexBlock(vertices_block):
     verts = vertices_block.STEPTREE
 
@@ -263,7 +263,7 @@ def ModelMergeGeometryPartsWithIdenticalShaderIds(model_tag):
         
         
         
-
+# For each geometry part gets rid of all duplicate vertices.
 def ModelRemoveDuplicateVertices(model_tag):
     model = model_tag.data.tagdata
     geometries = model.geometries.STEPTREE

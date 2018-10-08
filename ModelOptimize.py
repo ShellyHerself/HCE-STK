@@ -197,8 +197,8 @@ def BuildCondensedVertexBlock(vertices_block):
         quick_id = (vert.position_x, vert.position_y, vert.position_z)
         found = False
         if quick_id in verts_lists_by_quick_ids:
-            for other_vert, index in verts_lists_by_quick_ids[quick_id]:
-                if vert == other_vert:
+            for dict_vert, index in verts_lists_by_quick_ids[quick_id]:
+                if vert == dict_vert:
                     found = True
                     translation_list.append(index)
                     break

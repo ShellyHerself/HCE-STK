@@ -221,10 +221,10 @@ def BuildCondensedVertexBlock(vertices_block):
 def ModelCondenseShaders(model_tag):
     model = model_tag.data.tagdata
 
-    new_shaders = BuildCondensedShaderBlock(model.shaders)
-    model.shaders.STEPTREE[:] = new_shaders[0]
+    new_shaders, translation_list = BuildCondensedShaderBlock(model.shaders)
+    model.shaders.STEPTREE[:] = new_shaders
     
-    TranslateGeometryPartShaderIds(model.geometries, new_shaders[1])
+    TranslateGeometryPartShaderIds(model.geometries, translation_list)
     
     
     

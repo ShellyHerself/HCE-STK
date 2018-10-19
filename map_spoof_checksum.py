@@ -88,9 +88,10 @@ def MapGetChecksum(map_filepath):
     elif map_header.version.enum_name != "halo1ce":
         print("Input file does not appear to be a halo custom edition map.")
         return
-    checksum = map_header.crc32
+    header_checksum = map_header.crc32
+    calculated_checksum = crc_functions.calculate_ce_checksum(map, get_index_magic(map_header))
     map.close()
-    return checksum
+    return header_checksum, calculated_checksum
 
 
 #Only run this if the script is ran directly
@@ -100,11 +101,13 @@ if __name__ == '__main__':
     #Initialise startup arguments
     parser = ArgumentParser(description='Halo CE Mapfile checksum spoofer. Used to make new versions of maps compatible with an old version so they can play online together. If no checksum source is specified we will take the checksum number from the input map header and make sure the map gives this same checksum when calculated by the game.')
     parser.add_argument('-i', '--input', dest='map_in', type=str,
-                        help='For each geometry part removes all duplicate vertices.')
+                        help='Sets the map we spoof. If this arg is not used we spoof the map from the output arg.')
     parser.add_argument('-c', '--checksum', dest='checksum', type=str,
                         help='Absolute checksum you want to give the map. This is a hex number.')
     parser.add_argument('-m', '--copy-checksum-from', dest='checksum_map', type=str,
                         help='Makes the program copy the checksum from the map given in this argument.')
+    parser.add_argument('-k', '--calculate-checksum', dest='calc_checksum', action=store_true
+                        help='Calculates the checksum instead of taking it from the header. AFFECTS: --copy-checksum-from')
     parser.add_argument('output', metavar='map_out', type=str,
                         help="The map file we'll be saving our changes to.")
     args = parser.parse_args()
@@ -135,7 +138,11 @@ if __name__ == '__main__':
     elif args.checksum_map:
         print("Spoofing map by using checksum from provided checksum map.")
         sys.stdout.flush()
-        MapSpoofChecksum(map_in, map_out, MapGetChecksum(checksum_map))
+        header_checksum, calculated_checksum = MapGetChecksum(checksum_map)
+        if not calc_checksum:
+            MapSpoofChecksum(map_in, map_out, header_checksum)
+        else:
+            MapSpoofChecksum(map_in, map_out, calculated_checksum)
     else:
         print("Spoofing map using it's own checksum number. (Aligning the data to match the checksum.)")
         sys.stdout.flush()

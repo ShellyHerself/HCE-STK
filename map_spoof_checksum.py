@@ -106,7 +106,7 @@ if __name__ == '__main__':
                         help='Absolute checksum you want to give the map. This is a hex number.')
     parser.add_argument('-m', '--copy-checksum-from', dest='checksum_map', type=str,
                         help='Makes the program copy the checksum from the map given in this argument.')
-    parser.add_argument('-k', '--calculate-checksum', dest='calc_checksum', action='store_true'
+    parser.add_argument('-k', '--calculate-checksum', dest='calc_checksum', action='store_true',
                         help='Calculates the checksum instead of taking it from the header. AFFECTS: --copy-checksum-from')
     parser.add_argument('output', metavar='map_out', type=str,
                         help="The map file we'll be saving our changes to.")

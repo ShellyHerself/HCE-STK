@@ -139,13 +139,14 @@ if __name__ == '__main__':
         print("Spoofing map by using checksum from provided checksum map.")
         sys.stdout.flush()
         header_checksum, calculated_checksum = MapGetChecksum(checksum_map)
-        if not calc_checksum:
+        if not args.calc_checksum:
             MapSpoofChecksum(map_in, map_out, header_checksum)
         else:
             MapSpoofChecksum(map_in, map_out, calculated_checksum)
     else:
         print("Spoofing map using it's own checksum number. (Aligning the data to match the checksum.)")
         sys.stdout.flush()
-        MapSpoofChecksum(map_in, map_out, MapGetChecksum(map_in))
+        header_checksum, calculated_checksum = MapGetChecksum(map_in)
+        MapSpoofChecksum(map_in, map_out, header_checksum)
     
     print("finished\n")

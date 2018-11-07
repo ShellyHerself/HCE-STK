@@ -18,7 +18,8 @@ def ListShaderIds(shaders_block):
         shader_ids[i] = i
         for j in range(i):
             if (shaders[i].shader.filepath == shaders[j].shader.filepath 
-            and shaders[i].shader.tag_class == shaders[j].shader.tag_class):
+            and shaders[i].shader.tag_class == shaders[j].shader.tag_class
+            and shaders[i].permutation_index == shaders[j].permutation_index):
                 shader_ids[i] = j
                 break
 

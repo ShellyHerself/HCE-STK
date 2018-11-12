@@ -240,7 +240,7 @@ geometry_set = Struct('geometry set',
     SInt32('face count')
 )
 
-sets = Array('geometry sets',
+geometry_sets = Array('geometry sets',
     SIZE = '.field_count',
     SUB_STRUCT=geometry_set,
     POINTER='.array_address'
@@ -270,7 +270,7 @@ part = Container('part',
     ),
     Struct('set header',
         INCLUDE=general_header,
-        STEPTREE=sets
+        STEPTREE=geometry_sets
     ),
     Float('mult'),
     Switch('part_extension',

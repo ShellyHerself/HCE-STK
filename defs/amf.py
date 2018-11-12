@@ -58,7 +58,7 @@ node = Container('node',
     
 marker_instance = Struct('instance',
     SInt8('region index'),
-    SInt8('parent index'), #parent? Not sure about this one
+    SInt8('parent index'),
     SInt16('node index'),
     QStruct('position', INCLUDE=xyz_float),
     QStruct('orientation', INCLUDE=ijkw_float)
@@ -234,15 +234,15 @@ faces = Switch('faces',
         POINTER='.array_address'
 )
 
-set = Struct('set',
+geometry_set = Struct('geometry set',
     SInt16('shader index'),
     SInt32('starting face'),
     SInt32('face count')
 )
 
-sets = Array('sets',
+sets = Array('geometry sets',
     SIZE = '.field_count',
-    SUB_STRUCT=set,
+    SUB_STRUCT=geometry_set,
     POINTER='.array_address'
 )
 

@@ -337,16 +337,22 @@ terrain_shader = Container('terrain shader',
     Array('detailmaps', SIZE='.detailmap_count', SUB_STRUCT=bitmap2)
 )
 
-def name_starts_with_star(parent=None, **kwargs):
-    if parent.name[0] == '*':
-        parent.name = parent.name.replace('*', '')
+
+def shader_type_sig_size(rawdata=None, **kwargs):
+    if rawdata is None or rawdata.peek(1) != b'*':
+        return 0
+    return 1
+
+def is_terrain_shader(parent=None, **kwargs):
+    if parent.type_sig == '*':
         return True
     return False
-    
+
 shader = Container('shader',
+    StrRawLatin1('type sig', SIZE=shader_type_sig_size),
     CStrUtf8('name'),
     Switch('type',
-        CASE=name_starts_with_star,
+        CASE=is_terrain_shader,
         CASES={False:normal_shader,
                True:terrain_shader}
     )

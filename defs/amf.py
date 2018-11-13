@@ -58,7 +58,7 @@ node = Container('node',
     
 marker_instance = Struct('instance',
     SInt8('region index'),
-    SInt8('parent index'),
+    SInt8('permutation index'),
     SInt16('node index'),
     QStruct('position', INCLUDE=xyz_float),
     QStruct('orientation', INCLUDE=ijkw_float)

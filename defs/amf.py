@@ -234,15 +234,15 @@ faces = Switch('faces',
         POINTER='.array_address'
 )
 
-geometry_set = Struct('geometry set',
+section = Struct('section',
     SInt16('shader index'),
     SInt32('starting face'),
     SInt32('face count')
 )
 
-geometry_sets = Array('geometry sets',
+sections = Array('sections',
     SIZE = '.field_count',
-    SUB_STRUCT=geometry_set,
+    SUB_STRUCT=section,
     POINTER='.array_address'
 )
 
@@ -253,7 +253,7 @@ transformation_matrix = Struct('transformation matrix',
     QStruct('row4', INCLUDE=xyz_float)
 )
 
-part = Container('part',
+permutation = Container('permutation',
     CStrUtf8('name'),
     BitStruct('format_info',
         S1BitInt('vertex format', SIZE=4),
@@ -268,12 +268,12 @@ part = Container('part',
         INCLUDE=general_header,
         STEPTREE=faces
     ),
-    Struct('set header',
+    Struct('sections header',
         INCLUDE=general_header,
-        STEPTREE=geometry_sets
+        STEPTREE=sections
     ),
     Float('mult'),
-    Switch('part_extension',
+    Switch('transformation matrix',
         CASE=get_has_extra_block,
         CASES={False: transformation_matrix}
     )
@@ -281,12 +281,12 @@ part = Container('part',
 
 region = Container('region',
     CStrUtf8('name'),
-    Struct('parts header',
+    Struct('permutations header',
         INCLUDE=general_header,
-        STEPTREE=Array('parts',
+        STEPTREE=Array('permutations',
         SIZE = '.field_count',
         POINTER = '.array_address',
-        SUB_STRUCT = part
+        SUB_STRUCT = permutation
         )
     )
 )

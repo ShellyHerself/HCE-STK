@@ -39,12 +39,12 @@ general_header = QStruct('header',
     SInt32('array address', VISIBLE=False)
     )
     
-vertex_bounds = Struct('vertex bounds',
-    QStruct('x_bounds', INCLUDE=float_bounds),
-    QStruct('y_bounds', INCLUDE=float_bounds),
-    QStruct('z_bounds', INCLUDE=float_bounds),
-    QStruct('u_bounds', INCLUDE=float_bounds),
-    QStruct('v_bounds', INCLUDE=float_bounds)
+vertex_bounds = Struct('bounds',
+    QStruct('x', INCLUDE=float_bounds),
+    QStruct('y', INCLUDE=float_bounds),
+    QStruct('z', INCLUDE=float_bounds),
+    QStruct('u', INCLUDE=float_bounds),
+    QStruct('v', INCLUDE=float_bounds)
     )
     
 node = Container('node',
@@ -76,14 +76,14 @@ marker = Container('marker',
     )
 )
 
-vertex_compressed = Struct('vertex_compressed',
+vertex_compressed = Struct('vertex',
     QStruct('position', SInt16('x', UNIT_SCALE=1/32767), SInt16('y', UNIT_SCALE=1/32767), SInt16('z', UNIT_SCALE=1/32767)),
     BitStruct('normal', INCLUDE=compressed_normal_32, SIZE=4),
     SInt16('u', UNIT_SCALE=1/32767),
     SInt16('v', UNIT_SCALE=1/32767)
 )
 
-vertex_uncompressed = Struct('vertex_uncompressed',
+vertex_uncompressed = Struct('vertex',
     QStruct('position', INCLUDE=xyz_float),
     QStruct('normal', INCLUDE=ijk_float),
     Float('u'),
@@ -92,18 +92,18 @@ vertex_uncompressed = Struct('vertex_uncompressed',
 
 vert_indices_1 = QStruct('vert_indices',
     UInt8('node index 1'),
-    UInt8('node index sentinel', DEFAULT=255, VISIBLE=False)
+    UInt8('node index 2', DEFAULT=255, VISIBLE=False)
 )
 vert_indices_2 = QStruct('vert_indices',
     UInt8('node index 1'),
     UInt8('node index 2'),
-    UInt8('node index sentinel', DEFAULT=255, VISIBLE=False)
+    UInt8('node index 3', DEFAULT=255, VISIBLE=False)
 )
 vert_indices_3 = QStruct('vert_indices',
     UInt8('node index 1'),
     UInt8('node index 2'),
     UInt8('node index 3'),
-    UInt8('node index sentinel', DEFAULT=255, VISIBLE=False)
+    UInt8('node index 4', DEFAULT=255, VISIBLE=False)
 )
 vert_indices_4 = QStruct('vert_indices',
     UInt8('node index 1'),
@@ -259,7 +259,7 @@ permutation = Container('permutation',
         S1BitInt('vertex format', SIZE=4),
         S1BitInt('compression format', SIZE=4)
     ),
-    SInt8('some index'),
+    SInt8('node index'),
     QStruct('vertices header',
         INCLUDE=general_header,
         STEPTREE=vertices

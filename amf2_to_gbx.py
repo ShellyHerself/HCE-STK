@@ -11,9 +11,8 @@ amf_ext = ".amf"
 
 MAX_STRIP_LEN = 32763 * 3
 def TrianglesToStrips(triangles_list):
-    tris = [triangles_list]
     stripifier = Stripifier()
-    stripifier.load_mesh(tris, True)
+    stripifier.load_mesh(triangles_list, True)
     stripifier.make_strips()
     stripifier.link_strips()
 
@@ -134,7 +133,7 @@ def AmfToMod2(amf_model, do_output):
         if len(s_node.name) > 31:
             t_node.name = s_node.name[0:31]
             print("Warning: The name of node #%d : %s is longer than 31 characters, got: %d" 
-                  % len(t_nodes), s_node.name, len(s_node.name))
+                  % (len(t_nodes), s_node.name, len(s_node.name)))
             print("Cutting it short to:", t_node.name)
         else:
             t_node.name = s_node.name
@@ -166,7 +165,7 @@ def AmfToMod2(amf_model, do_output):
         if len(s_marker.name) > 31:
             t_marker.name = s_marker.name[0:31]
             print("Warning: The name of node #%d : %s is longer than 31 characters, got: %d." 
-                  % len(t_markers), s_marker.name, len(s_marker.name))
+                  % (len(t_markers), s_marker.name, len(s_marker.name)))
             print("Cutting it short to:", t_marker.name)
         else:
             t_marker.name = s_marker.name
@@ -194,7 +193,7 @@ def AmfToMod2(amf_model, do_output):
         if len(s_region.name) > 31:
             t_region.name = s_region.name[0:31]
             print("Warning: The name of node #%d : %s is longer than 31 characters, got: %d." 
-                  % len(t_regions), s_region.name, len(s_region.name))
+                  % (len(t_regions), s_region.name, len(s_region.name)))
             print("Cutting it short to:", t_region.name)
         else:
             t_region.name = s_region.name
@@ -204,11 +203,11 @@ def AmfToMod2(amf_model, do_output):
         for s_permutation in s_permutations:
             t_permutations.append()
             t_permutation = t_permutations[-1]
-            
+
             if len(s_permutation.name) > 31:
                 t_permutation.name = s_permutation.name[0:31]
                 print("Warning: The name of permutation #%d : %s in region: #%d : %s is longer than 31 characters, got: %d." 
-                      % len(t_permutations), s_permutation.name, len(t_regions), s_region.name, len(s_permutation.name))
+                      % (len(t_permutations), s_permutation.name, len(t_regions), s_region.name, len(s_permutation.name)))
                 print("Cutting it short to:", t_permutation.name)
             else:
                 t_permutation.name = s_permutation.name
@@ -289,7 +288,7 @@ def AmfToMod2(amf_model, do_output):
                         
                     elif vertex_format == 1:
                         t_vert.node_0_index = s_vert.node_indices[0]
-                        if t_vert.node_1_index != 255:
+                        if s_vert.node_indices[1] != 255:
                             t_vert.node_1_index = s_vert.node_indices[1]
                             t_vert.node_0_weight = 0.5
                             t_vert.node_1_weight = 0.5
@@ -407,7 +406,7 @@ def AmfToMod2(amf_model, do_output):
                 triangle_strip = TrianglesToStrips(triangles)
                 
                 # The triangle strip needs to be divisible by 3
-                needed_padding = 3 - len(triangle_strip) % 3
+                needed_padding = (3 - len(triangle_strip) % 3) % 3
                 
                 # Any unused/padding slots in the triangles array need to have the number -1
                 for i in range(needed_padding):

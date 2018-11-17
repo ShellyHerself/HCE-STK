@@ -80,8 +80,6 @@ def AmfToMod2(amf_model, do_output):
             t_instances[-1].rotation[:] = amf_quat_to_gbx_quat(s_instance.orientation)
             
             
-    
-    
     t_regions = target.regions.STEPTREE
     s_regions = source.regions_header.STEPTREE
     t_geometries = target.geometries.STEPTREE
@@ -174,7 +172,7 @@ def AmfToMod2(amf_model, do_output):
                         t_vert[3:6] = s_vert.data.normal[0:3]
                         # binormals and tangents are calculated when all verts are added to the STEPTREE
                         t_vert.u = s_vert.data.u
-                        t_vert.v = s_vert.data.v
+                        t_vert.v = 1 - s_vert.data.v
                     else:
                         bounds = s_permutation.vertices_header.bounds
                         t_vert.position_x = ((s_vert.data.position.x / 32767) * (bounds.x.upper - bounds.x.lower) + bounds.x.lower) / 100
@@ -186,7 +184,7 @@ def AmfToMod2(amf_model, do_output):
                         t_vert.normal_k = s_vert.data.normal.k / 511
                         
                         t_vert.u = (s_vert.data.u / 32767) * (bounds.u.upper - bounds.u.lower) + bounds.u.lower
-                        t_vert.v = (s_vert.data.v / 32767) * (bounds.v.upper - bounds.v.lower) + bounds.v.lower
+                        t_vert.v = 1 - ((s_vert.data.v / 32767) * (bounds.v.upper - bounds.v.lower) + bounds.v.lower)
                     
                     if vertex_format == 0:
                         t_vert.node_0_index = s_permutation.node_index
@@ -332,6 +330,7 @@ def AmfToMod2(amf_model, do_output):
                         t_part.centroid_translation[c] += v[c]
                 for c in range(3):
                     t_part.centroid_translation[c] /= len(t_verts)
+            
             
     t_shaders = target.shaders.STEPTREE
     s_shaders = source.shaders_header.STEPTREE

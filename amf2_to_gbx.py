@@ -8,6 +8,8 @@ import math
 mod2_ext = ".gbxmodel"
 amf_ext = ".amf"
 
+def amf_quat_to_gbx_quat(quat):
+    return -quat[0], -quat[1], -quat[2], quat[3]
 
 # Converts an AMF model into a GBX model.
 def AmfToMod2(amf_model, do_output):
@@ -43,7 +45,7 @@ def AmfToMod2(amf_model, do_output):
         t_node.translation[0]       = s_node.position[0] / 100
         t_node.translation[1]       = s_node.position[1] / 100
         t_node.translation[2]       = s_node.position[2] / 100
-        t_node.rotation             = s_node.orientation
+        t_node.rotation[:]          = amf_quat_to_gbx_quat(s_node.orientation)
         t_node.distance_from_parent = math.sqrt(t_node.translation[0]**2+t_node.translation[1]**2+t_node.translation[2]**2)
         
     
@@ -75,7 +77,8 @@ def AmfToMod2(amf_model, do_output):
             t_instances[-1].translation[0] = s_instance.position[0] / 100
             t_instances[-1].translation[1] = s_instance.position[1] / 100
             t_instances[-1].translation[2] = s_instance.position[2] / 100
-            t_instances[-1][4:7] = s_instance[4:7]
+            t_instances[-1].rotation[:] = amf_quat_to_gbx_quat(s_instance.orientation)
+            
             
     
     

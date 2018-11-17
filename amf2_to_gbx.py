@@ -203,14 +203,18 @@ def AmfToMod2(amf_model, do_output):
         for s_permutation in s_permutations:
             t_permutations.append()
             t_permutation = t_permutations[-1]
-
-            if len(s_permutation.name) > 31:
-                t_permutation.name = s_permutation.name[0:31]
+            
+            perm_name = s_permutation.name
+            if t_region.name == "Instances":
+                perm_name = perm_name.replace("%", "", 1)
+            
+            if len(perm_name) > 31:
+                t_permutation.name = perm_name[0:31]
                 print("Warning: The name of permutation #%d : %s in region: #%d : %s is longer than 31 characters, got: %d." 
-                      % (len(t_permutations), s_permutation.name, len(t_regions), s_region.name, len(s_permutation.name)))
+                      % (len(t_permutations), perm_name, len(t_regions), s_region.name, len(perm_name)))
                 print("Cutting it short to:", t_permutation.name)
             else:
-                t_permutation.name = s_permutation.name
+                t_permutation.name = perm_name
             
             # set superlow-superhigh geometry block indices
             t_permutation[2:7] = [len(t_geometries)] * 5

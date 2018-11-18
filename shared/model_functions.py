@@ -8,9 +8,8 @@ def TrianglesToStrips(triangles_list):
     stripifier.make_strips()
     stripifier.link_strips()
 
-    strips = stripifier.all_strips.get(0)
-    tri_strip = strips[0]
-    
+    tri_strip = stripifier.translate_strip(stripifier.all_strips.get(0)[0])
+
     if len(tri_strip) > MAX_STRIP_LEN:
         return (
             ("Too many triangles in this part. Max triangles"
@@ -38,7 +37,7 @@ def CalcVertBiNormsAndTangents(gbx_verts, triangles):
                 v2 = verts[tri[(tri_i + 2) % 3]]
             except IndexError:
                 print(len(verts), tri)
-            return
+
             b = binormals[v_i]
             t = tangents[v_i]
 
@@ -90,7 +89,7 @@ def CalcVertBiNormsAndTangents(gbx_verts, triangles):
         nk = vert.normal_k
         b = binormals[i]
         t = tangents[i]
-
+        
         if b[3]:
             vert.binormal_i = b[0] / b[3]
             vert.binormal_j = b[1] / b[3]

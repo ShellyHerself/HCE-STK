@@ -297,16 +297,16 @@ def AmfToMod2(amf_model, do_output):
                             t_vert.node_0_weight /= total_weight
                             t_vert.node_1_weight /= total_weight
                     
-                # Calculate the Binormals and Tangents of each vert
-                CalcVertBiNormsAndTangents(t_verts, triangles)
-                
                 ## Convert triangles to strips and add them to the GBX Model Part
                 # Translate the triangle vert ids to match the correct verts in the Part
                 for triangle in triangles:
                     triangle[0] = vert_translation_list[triangle[0]]
                     triangle[1] = vert_translation_list[triangle[1]]
                     triangle[2] = vert_translation_list[triangle[2]]
-                #print(triangles)
+                
+                # Calculate the Binormals and Tangents of each vert
+                CalcVertBiNormsAndTangents(t_verts, triangles)
+                
                 triangle_strip = TrianglesToStrips(triangles)
                 
                 # The triangle strip needs to be divisible by 3

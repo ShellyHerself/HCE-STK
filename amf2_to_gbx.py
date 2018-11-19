@@ -42,18 +42,12 @@ def AmfToMod2(amf_model, do_output):
         t_node.next_sibling_node    = s_node.sibling_index
         t_node.first_child_node     = s_node.child_index
         t_node.parent_node          = s_node.parent_index
-        t_node.translation[0]       = s_node.position[0] / 100
-        t_node.translation[1]       = s_node.position[1] / 100
-        t_node.translation[2]       = s_node.position[2] / 100
+        t_node.translation.x        = s_node.position.x / 100
+        t_node.translation.y        = s_node.position.y / 100
+        t_node.translation.z        = s_node.position.z / 100
         t_node.rotation[:]          = amf_quat_to_gbx_quat(s_node.orientation)
         t_node.distance_from_parent = math.sqrt(t_node.translation[0]**2+t_node.translation[1]**2+t_node.translation[2]**2)
         
-    
-    target.superhigh_lod_nodes = len(t_nodes)
-    target.high_lod_nodes      = len(t_nodes)
-    target.medium_lod_nodes    = len(t_nodes)
-    target.low_lod_nodes       = len(t_nodes)
-    target.superlow_lod_nodes  = len(t_nodes)
     
     t_markers = target.markers.STEPTREE
     s_markers = source.markers_header.STEPTREE
@@ -74,9 +68,9 @@ def AmfToMod2(amf_model, do_output):
         for s_instance in s_instances:
             t_instances.append()
             t_instances[-1][0:3] = s_instance[0:3]
-            t_instances[-1].translation[0] = s_instance.position[0] / 100
-            t_instances[-1].translation[1] = s_instance.position[1] / 100
-            t_instances[-1].translation[2] = s_instance.position[2] / 100
+            t_instances[-1].translation.x = s_instance.position.x / 100
+            t_instances[-1].translation.y = s_instance.position.y / 100
+            t_instances[-1].translation.z = s_instance.position.z / 100
             t_instances[-1].rotation[:] = amf_quat_to_gbx_quat(s_instance.orientation)
             
             

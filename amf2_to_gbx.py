@@ -195,101 +195,48 @@ def AmfToMod2(amf_model, do_output):
                             
                     elif vertex_format == 2:
                         index_count = 1
-                        if   indices[1] == 255: index_count = 1
-                        elif indices[2] == 255: index_count = 2
-                        elif indices[3] == 255: index_count = 3
+                        if   s_vert.node_indices[1] == 255: index_count = 1
+                        elif s_vert.node_indices[2] == 255: index_count = 2
+                        elif s_vert.node_indices[3] == 255: index_count = 3
                         else: index_count = 4
                         
-                        # Don't talk to me about this whole vertex weighing and node index logic. Just don't.
-                        if index_count == 1:
-                            t_vert.node_0_index = s_vert.node_indices[0]
-                            t_vert.node_0_weight = 1.0
-                        elif index_count == 2:
-                            t_vert.node_0_index = s_vert.node_indices[0]
-                            t_vert.node_1_index = s_vert.node_indices[1]
-                            t_vert.node_0_weight = s_vert.weights[0]
-                            t_vert.node_1_weight = s_vert.weights[1]
-                        else:
-                            # If there is more than 2 node influences we want to use the ones that will most likely look the best
-                            unique_weights = list(set(s_vert.data.vert_indices))
-                            # If there is multiple nodes with the same weight we might prefer them
-                            if len(unique_weights) < len(s_vert.data.vert_indices):
-                                occurence_weight = [0, 0.0, [] ] * len(unique_weights)
-                                # Count up the total weight of the equally weighed nodes
-                                for i in range(len(occurence_weight)):
-                                    for j in range(index_count):
-                                        if unique_weights[i] == s_vert.weights[j]:
-                                            unique_weights[i][0] += 1
-                                            unique_weights[i][2].append(s_vert.data.vert_indices[j])
-                                    unique_weights[i][1]  = unique_weights[i][0] * unique_weights[i]
-                                # Find the equally weighed nodes with the highest total weight
-                                highest = [0.0, [] ]
-                                second_highest  = [0.0, [] ]
-                                for i in range(len(occurence_weight)):
-                                    if occurence_weight[i][1] > highest[1]:
-                                        highest        = [occurence_weight[i][1], occurence_weight[i][2]]
-                                    if occurence_weight[i][1] > second_highest[1] and s_vert.weights[i] < highest[1]:
-                                        second_highest = [occurence_weight[i][1], occurence_weight[i][2]]
-                                # If the highest equally weighed nodes are a pair of two, just use them.
-                                if len(highest[1]) == 2:
-                                    t_vert.node_0_index = s_vert.node_indices.vert_indices[highest[1][0]]
-                                    t_vert.node_1_index = s_vert.node_indices.vert_indices[highest[1][1]]
-                                    t_vert.node_0_weight = 0.5
-                                    t_vert.node_1_weight = 0.5
-                                # If the highest equally weighed nodes come in a group higher than two,
-                                # prefer the ones that share the same parent.
-                                elif len(highest[1]) > 2:
-                                    parents           = [0] * len(highest[1])
-                                    for i in range(len(highest[1])):
-                                        parents[i] = t_nodes[highest[1][i]].parent_node
-                                        
-                                    unique_parents = list(set(parents))
-                                    parent_occurances = [0, []] * len(highest[1])
-                                    
-                                    for i in range(len(unique_parents)):
-                                        for j in range(parents):
-                                            if unique_parents[i] == parents[j]:
-                                                parent_occurances[i][0] += 1
-                                                parent_occurances[i][1].append(s_vert.node_indices.vert_indices[j])
-                                    highest = [0, []]
-                                    for i in range(len(parent_occurances)):
-                                        if parent_occurances[i][0] > highest[0]:
-                                            highest[0] = parent_occurances[i][0]
-                                            highest[1] = parent_occurances[i][1]
-                                            
-                                    # However many nodes with equal parents there may be at this point, 
-                                    # we always want the first and last. As this anecdotally (sigh) seems to be the best solution.
-                                    t_vert.node_0_index = s_vert.node_indices.vert_indices[highest[1][0]]
-                                    t_vert.node_1_index = s_vert.node_indices.vert_indices[highest[1][-1]]
-                                    t_vert.node_0_weight = 0.5
-                                    t_vert.node_1_weight = 0.5
-                                # If a single node weighs more than any other nodes combined just take that one and the next highest
-                                else:
-                                    t_vert.node_0_index = s_vert.node_indices.vert_indices[highest[1][0]]
-                                    t_vert.node_1_index = s_vert.node_indices.vert_indices[second_highest[1][0]]
-                                    t_vert.node_0_weight = s_vert.weights.vert_indices[highest[0]]
-                                    t_vert.node_1_weight = s_vert.weights.vert_indices[second_highest[0]]
+                        # Put all the node indices and weights and put them in a neat list
+                        available_verts = []
+                        for i in range(0,index_count):
+                            this_vert = []
+                            this_vert.append(s_vert.node_indices[i])
+                            this_vert.append(s_vert.node_weights[i])
+                            available_verts.append(this_vert)
                             
-                            # If there is no nodes with equal weights pick the two highest weight ones.
+                        vert_weights_to_collect = 1
+                        if len(available_verts) > 1: vert_weights_to_collect = 2
+                        
+                        # Get the two highest weighted node indices and weights and apply them to the target vertex
+                        for v in range(vert_weights_to_collect):
+                            highest_weight       = 0.0
+                            highest_weight_index = 0
+                            highest_weight_ref   = 0
+                            
+                            for i in range(len(available_verts)):
+                                if available_verts[i][1] > available_verts[i][1]:
+                                    highest_weight = available_verts[i][1]
+                                    highest_weight_index = available_verts[i][0]
+                                    highest_weight_ref = i
+                            
+                            if v == 0:
+                                t_vert.node_0_index = highest_weight_index
+                                t_vert.node_0_weight = highest_weight
                             else:
-                                highest = [0, 0.0]
-                                second_highest  = [0, 0.0]
-                                
-                                for i in range(index_count):
-                                    if s_vert.weights.vert_weights[i] > highest[1]:
-                                        highest        = [i, s_vert.weights.vert_weights[i]]
-                                    if s_vert.weights.vert_weights[i] > second_highest[1] and s_vert.weights.vert_weights[i] < highest[1]:
-                                        second_highest = [i, s_vert.weights.vert_weights[i]]
-                                        
-                                t_vert.node_0_index = s_vert.node_indices.vert_indices[highest[0]]
-                                t_vert.node_1_index = s_vert.node_indices.vert_indices[second_highest[0]]
-                                t_vert.node_0_weight = highest[1]
-                                t_vert.node_1_weight = second_highest[1]
-                                
-                            # Fix the weights up so they add up to 1.0
-                            total_weight = t_vert.node_0_weight + t_vert.node_1_weight
-                            t_vert.node_0_weight /= total_weight
-                            t_vert.node_1_weight /= total_weight
+                                t_vert.node_1_index = highest_weight_index
+                                t_vert.node_1_weight = highest_weight
+                            
+                            available_verts.pop(highest_weight_ref)
+                        
+                        #Normalize vert weights so we end up with them totalling 1.0
+                        total_weight = t_vert.node_0_weight + t_vert.node_1_weight
+                        t_vert.node_0_weight /= total_weight
+                        t_vert.node_1_weight /= total_weight
+                        
                     
                 ## Convert triangles to strips and add them to the GBX Model Part
                 # Translate the triangle vert ids to match the correct verts in the Part

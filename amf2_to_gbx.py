@@ -1,18 +1,26 @@
 from reclaimer.hek.defs.mod2 import mod2_def
+from reclaimer.hek.defs.objs.matrices import multiply_quaternions
 from defs.amf import amf_def
 from shared.model_functions import TrianglesToStrips
 from shared.model_functions import CalcVertBiNormsAndTangents
+import copy
 import sys
 import time
 import math
 mod2_ext = ".gbxmodel"
 amf_ext = ".amf"
 
+fixup_nodes_names_list = ("fixup",
+                          "jiggle",
+                          "pedestal",
+                          "aim_pitch",
+                          "aim_yaw")
+
 def amf_quat_to_gbx_quat(quat):
     return -quat[0], -quat[1], -quat[2], quat[3]
 
 # Converts an AMF model into a GBX model.
-def AmfToMod2(amf_model, do_output):
+def AmfToMod2(amf_model, purge_fixups, do_output):
     gbx_model = mod2_def.build()
     target = gbx_model.data.tagdata
     source = amf_model.data
@@ -20,22 +28,46 @@ def AmfToMod2(amf_model, do_output):
     target.base_map_u_scale = 1.0
     target.base_map_v_scale = 1.0
     
-    node_translations = []
+    node_id_translations = []
+    is_node_purged_list = []
     
     t_nodes = target.nodes.STEPTREE
     s_nodes = source.nodes_header.STEPTREE
-    if len(s_nodes) > 62:
-        print("Warning, node count is over the max supported amount. Supported range: 1-62. Nodecount is: %d"
-                % len(s_nodes))
     for s_node in s_nodes:
+        node_id = len(t_nodes) #node num if no translation is needed
         t_nodes.append()
         t_node = t_nodes[-1]
         
+        # Determine what id should be in the translation list for this node index
+        fixup = False
+        if purge_fixups:
+            if s_node.name.endswith(fixup_nodes_names_list):
+                fixup = True
+                is_node_purged_list.append(True)
+                if "pedestal" in s_node.name:
+                    #pedestals are usually the first node and their child node should become the first
+                    node_id_translations.append(s_node.child_index)
+                elif "wrist" in s_node.name:
+                    #wrist fixups are dumb and should be rerigged to their parent's parent
+                    node_id_translations.append(s_nodes[s_node.parent_index].parent_index)
+                else:
+                    #normal fixups should be rerigged to their parents
+                    node_id_translations.append(s_node.parent_index)
+            else:
+                #Not a fixup, index should stay the same
+                is_node_purged_list.append(False)
+                node_id_translations.append(node_id)
+        else:
+            #Not purging fixups, index should stay the same
+            is_node_purged_list.append(False)
+            node_id_translations.append(node_id)
+            
         if len(s_node.name) > 31:
             t_node.name = s_node.name[0:31]
-            print("Warning: The name of node #%d : %s is longer than 31 characters, got: %d" 
-                  % (len(t_nodes), s_node.name, len(s_node.name)))
-            print("Cutting it short to:", t_node.name)
+            if not fixup: #We don't need to alert the user with this action if this is a fixup bone, as it will be removed.
+                print("Warning: The name of node #%d : %s is longer than 31 characters, got: %d" 
+                      % (len(t_nodes), s_node.name, len(s_node.name)))
+                print("Cutting it short to:", t_node.name)
         else:
             t_node.name = s_node.name
         
@@ -48,6 +80,50 @@ def AmfToMod2(amf_model, do_output):
         t_node.rotation[:]          = amf_quat_to_gbx_quat(s_node.orientation)
         t_node.distance_from_parent = math.sqrt(t_node.translation[0]**2+t_node.translation[1]**2+t_node.translation[2]**2)
         
+    if purge_fixups:
+        leftover_nodes = list(set(node_id_translations))
+        for i in range(len(node_id_translations)):
+            for j in range(len(leftover_nodes)):
+                if leftover_nodes[j] == node_id_translations[i]:
+                    node_id_translations[i] = j
+                    break
+                    
+        new_nodes = []
+        old_nodes = []
+        old_nodes[:] = t_nodes[:]
+        for i in range(len(leftover_nodes)):
+            new_nodes.append(copy.deepcopy(old_nodes[leftover_nodes[i]]))
+            new_node = new_nodes[-1]
+            
+            while new_node.parent_node != -1 and is_node_purged_list[new_node.parent_node] != False:
+                new_node.rotation[:] = multiply_quaternions(list(new_node.rotation[:]), list(old_nodes[new_node.parent_node].rotation[:]))
+                new_node.parent_node = old_nodes[new_node.parent_node].parent_node
+
+            if new_node.parent_node != -1:
+                new_node.parent_node = node_id_translations[new_node.parent_node]
+            
+        for i in range(len(new_nodes)-1):
+            new_nodes[i].next_sibling_node = -1
+            if new_nodes[i].parent_node == new_nodes[i+1].parent_node:
+                new_nodes[i].next_sibling_node = i+1
+                
+            new_nodes[i].first_child_node = -1
+            for j in range(i+1, len(new_nodes)):
+                if new_nodes[j].parent_node == i:
+                    new_nodes[i].first_child_node = j
+                    break
+        
+        new_nodes[-1].next_sibling_node = -1
+        new_nodes[-1].first_child_node = -1
+        
+        t_nodes[:] = new_nodes[:]
+        print("Node purging lowered the node count from %d to %d"
+              % (len(old_nodes), len(new_nodes)))
+        
+    
+    if len(t_nodes) > 62:
+        print("Warning, node count is over the max supported amount. Supported range: 1-62. Nodecount is: %d"
+                % len(s_nodes))
     
     t_markers = target.markers.STEPTREE
     s_markers = source.markers_header.STEPTREE
@@ -67,12 +143,22 @@ def AmfToMod2(amf_model, do_output):
         
         for s_instance in s_instances:
             t_instances.append()
-            t_instances[-1][0:3] = s_instance[0:3]
-            t_instances[-1].translation.x = s_instance.position.x / 100
-            t_instances[-1].translation.y = s_instance.position.y / 100
-            t_instances[-1].translation.z = s_instance.position.z / 100
-            t_instances[-1].rotation[:] = amf_quat_to_gbx_quat(s_instance.orientation)
+            t_instance = t_instances[-1]
             
+            t_instance[0:3] = s_instance[0:3]
+            t_instance.translation.x = s_instance.position.x / 100
+            t_instance.translation.y = s_instance.position.y / 100
+            t_instance.translation.z = s_instance.position.z / 100
+            t_instance.rotation[:] = amf_quat_to_gbx_quat(s_instance.orientation)
+            
+            if purge_fixups:
+                while t_instance.node_index != -1 and is_node_purged_list[t_instance.node_index] != False:
+                    t_instance.rotation[:] = multiply_quaternions(list(t_instance.rotation[:]), list(old_nodes[t_instance.node_index].rotation[:]))
+                    t_instance.node_index = old_nodes[t_instance.node_index].parent_node
+                    
+                if t_instance.node_index != -1:
+                    t_instance.node_index = node_id_translations[t_instance.node_index]
+                
             
     t_regions = target.regions.STEPTREE
     s_regions = source.regions_header.STEPTREE
@@ -120,7 +206,7 @@ def AmfToMod2(amf_model, do_output):
             #print(s_permutation.vertices_header)
             bounds = None
             if s_permutation.format_info.compression_format != 0:
-                bounds     = s_permutation.vertices_header.bounds
+                bounds = s_permutation.vertices_header.bounds
             s_verts    = s_permutation.vertices_header.vertices.vertices
             s_tris     = s_permutation.faces_header.STEPTREE
             s_sections = s_permutation.sections_header.STEPTREE
@@ -181,15 +267,18 @@ def AmfToMod2(amf_model, do_output):
                         t_vert.v = 1 - ((s_vert.data.v / 32767) * (bounds.v.upper - bounds.v.lower) + bounds.v.lower)
                     
                     if vertex_format == 0:
-                        t_vert.node_0_index = s_permutation.node_index
+                        t_vert.node_0_index = node_id_translations[s_permutation.node_index]
                         t_vert.node_0_weight = 1.0
                         
                     elif vertex_format == 1:
-                        t_vert.node_0_index = s_vert.node_indices[0]
+                        t_vert.node_0_index = node_id_translations[s_vert.node_indices[0]]
                         if s_vert.node_indices[1] != 255:
-                            t_vert.node_1_index = s_vert.node_indices[1]
-                            t_vert.node_0_weight = 0.5
-                            t_vert.node_1_weight = 0.5
+                            if node_id_translations[s_vert.node_indices[1]] == t_vert.node_0_index:
+                                t_vert.node_0_weight = 1.0
+                            else:
+                                t_vert.node_1_index = node_id_translations[s_vert.node_indices[1]]
+                                t_vert.node_0_weight = 0.5
+                                t_vert.node_1_weight = 0.5
                         else:
                             t_vert.node_0_weight = 1.0
                             
@@ -200,16 +289,23 @@ def AmfToMod2(amf_model, do_output):
                         elif s_vert.node_indices[3] == 255: index_count = 3
                         else: index_count = 4
                         
-                        # Put all the node indices and weights and put them in a neat list
-                        available_verts = []
+                        # Take all the node indices and weights and put them in a neat list
+                        available_nodes = []
                         for i in range(0,index_count):
                             this_vert = []
-                            this_vert.append(s_vert.node_indices[i])
+                            this_vert.append(node_id_translations[s_vert.node_indices[i]])
                             this_vert.append(s_vert.node_weights[i])
-                            available_verts.append(this_vert)
+                            found = False
+                            for a_vert in available_nodes:
+                                if a_vert[0] == this_vert[0]:
+                                    a_vert[1] += this_vert[1]
+                                    found = True
+                                    break
+                            if not found:
+                                available_nodes.append(this_vert)
                             
                         vert_weights_to_collect = 1
-                        if len(available_verts) > 1: vert_weights_to_collect = 2
+                        if len(available_nodes) > 1: vert_weights_to_collect = 2
                         
                         # Get the two highest weighted node indices and weights and apply them to the target vertex
                         for v in range(vert_weights_to_collect):
@@ -217,10 +313,10 @@ def AmfToMod2(amf_model, do_output):
                             highest_weight_index = 0
                             highest_weight_ref   = 0
                             
-                            for i in range(len(available_verts)):
-                                if available_verts[i][1] > available_verts[i][1]:
-                                    highest_weight = available_verts[i][1]
-                                    highest_weight_index = available_verts[i][0]
+                            for i in range(len(available_nodes)):
+                                if available_nodes[i][1] > available_nodes[i][1]:
+                                    highest_weight = available_nodes[i][1]
+                                    highest_weight_index = available_nodes[i][0]
                                     highest_weight_ref = i
                             
                             if v == 0:
@@ -230,7 +326,7 @@ def AmfToMod2(amf_model, do_output):
                                 t_vert.node_1_index = highest_weight_index
                                 t_vert.node_1_weight = highest_weight
                             
-                            available_verts.pop(highest_weight_ref)
+                            available_nodes.pop(highest_weight_ref)
                         
                         #Normalize vert weights so we end up with them totalling 1.0
                         total_weight = t_vert.node_0_weight + t_vert.node_1_weight
@@ -310,7 +406,7 @@ if __name__ == '__main__':
     print("Format version:", amf.data.version)
     sys.stdout.flush()
 
-    gbx_model = AmfToMod2(amf, True)
+    gbx_model = AmfToMod2(amf, True, True)
     
     print("Saving GBX model tag...", end='')
     sys.stdout.flush()

@@ -11,16 +11,19 @@ mod2_ext = ".gbxmodel"
 amf_ext = ".amf"
 
 fixup_nodes_names_list = ("fixup",
-                          "jiggle",
-                          "pedestal",
-                          "aim_pitch",
-                          "aim_yaw")
+                          "jiggle")
+                          
+remove_nodes_names_list = ("pedestal",
+                           "aim_pitch",
+                           "aim_yaw")
+                          
+
 
 def amf_quat_to_gbx_quat(quat):
     return -quat[0], -quat[1], -quat[2], quat[3]
 
 # Converts an AMF model into a GBX model.
-def AmfToMod2(amf_model, purge_fixups, do_output):
+def AmfToMod2(amf_model, purge_helpers, do_output):
     gbx_model = mod2_def.build()
     target = gbx_model.data.tagdata
     source = amf_model.data
@@ -31,6 +34,10 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
     node_id_translations = []
     is_node_purged_list = []
     
+    if do_output:
+        print("Setting up nodes...", end='')
+        sys.stdout.flush()
+    
     t_nodes = target.nodes.STEPTREE
     s_nodes = source.nodes_header.STEPTREE
     for s_node in s_nodes:
@@ -40,19 +47,26 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
         
         # Determine what id should be in the translation list for this node index
         fixup = False
-        if purge_fixups:
+        if purge_helpers:
             if s_node.name.endswith(fixup_nodes_names_list):
                 fixup = True
                 is_node_purged_list.append(True)
-                if "pedestal" in s_node.name:
-                    #pedestals are usually the first node and their child node should become the first
-                    node_id_translations.append(s_node.child_index)
-                elif "wrist" in s_node.name:
+                
+                if "wrist" in s_node.name:
                     #wrist fixups are dumb and should be rerigged to their parent's parent
                     node_id_translations.append(s_nodes[s_node.parent_index].parent_index)
                 else:
                     #normal fixups should be rerigged to their parents
                     node_id_translations.append(s_node.parent_index)
+            elif s_node.name.endswith(remove_nodes_names_list):
+                fixup = True
+                is_node_purged_list.append(True)
+                
+                for i in range(len(s_nodes)):
+                    if (not s_nodes[i].name.endswith(fixup_nodes_names_list)
+                    and not s_nodes[i].name.endswith(remove_nodes_names_list)):
+                        node_id_translations.append(i)
+                        break
             else:
                 #Not a fixup, index should stay the same
                 is_node_purged_list.append(False)
@@ -80,7 +94,10 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
         t_node.rotation[:]          = amf_quat_to_gbx_quat(s_node.orientation)
         t_node.distance_from_parent = math.sqrt(t_node.translation[0]**2+t_node.translation[1]**2+t_node.translation[2]**2)
         
-    if purge_fixups:
+    if purge_helpers:
+        if do_output:
+            print("Calculating new node positions and rotations...", end='')
+            sys.stdout.flush()
         leftover_nodes = list(set(node_id_translations))
         for i in range(len(node_id_translations)):
             for j in range(len(leftover_nodes)):
@@ -117,13 +134,19 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
         new_nodes[-1].first_child_node = -1
         
         t_nodes[:] = new_nodes[:]
-        print("Node purging lowered the node count from %d to %d"
-              % (len(old_nodes), len(new_nodes)))
+        if do_output:
+            print("\nNode purging lowered the node count from %d to %d"
+                  % (len(old_nodes), len(new_nodes)))
         
     
     if len(t_nodes) > 62:
         print("Warning, node count is over the max supported amount. Supported range: 1-62. Nodecount is: %d"
                 % len(s_nodes))
+                
+    if do_output:
+        print("done")
+        print("Setting up markers...", end='')
+        sys.stdout.flush()
     
     t_markers = target.markers.STEPTREE
     s_markers = source.markers_header.STEPTREE
@@ -151,15 +174,19 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
             t_instance.translation.z = s_instance.position.z / 100
             t_instance.rotation[:] = amf_quat_to_gbx_quat(s_instance.orientation)
             
-            if purge_fixups:
+            if purge_helpers:
                 while t_instance.node_index != -1 and is_node_purged_list[t_instance.node_index] != False:
                     t_instance.rotation[:] = multiply_quaternions(list(t_instance.rotation[:]), list(old_nodes[t_instance.node_index].rotation[:]))
                     t_instance.node_index = old_nodes[t_instance.node_index].parent_node
                     
                 if t_instance.node_index != -1:
                     t_instance.node_index = node_id_translations[t_instance.node_index]
-                
-            
+    
+    if do_output:
+        print("done")
+        print("Setting up regions...")
+        sys.stdout.flush()
+        
     t_regions = target.regions.STEPTREE
     s_regions = source.regions_header.STEPTREE
     t_geometries = target.geometries.STEPTREE
@@ -177,6 +204,8 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
             print("Cutting it short to:", t_region.name)
         else:
             t_region.name = s_region.name
+        
+        
         
         t_permutations = t_region.permutations.STEPTREE
         s_permutations = s_region.permutations_header.STEPTREE
@@ -196,6 +225,9 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
             else:
                 t_permutation.name = perm_name
             
+            if do_output:
+                print("Setting up region: ", t_region.name, ", permutation: ", t_permutation.name, "...", sep='', end='')
+                sys.stdout.flush()
             # set superlow-superhigh geometry block indices
             t_permutation[2:7] = [len(t_geometries)] * 5
             
@@ -203,7 +235,7 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
             t_geometry = t_geometries[-1]
             
             t_parts = t_geometry.parts.STEPTREE
-            #print(s_permutation.vertices_header)
+            
             bounds = None
             if s_permutation.format_info.compression_format != 0:
                 bounds = s_permutation.vertices_header.bounds
@@ -221,8 +253,7 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
                 triangles = []
                 for i in range(s_section.starting_face, s_section.starting_face+s_section.face_count):
                     triangles.append(s_tris[i][:])
-                    #triangles[-1].extend(s_tris[i][0:2])
-                    #print(s_tris[i])
+                    
                     used_vert_list[triangles[-1][0]] = True
                     used_vert_list[triangles[-1][1]] = True
                     used_vert_list[triangles[-1][2]] = True
@@ -233,11 +264,10 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
                 for i in range(len(used_vert_list)):
                     if used_vert_list[i] == True:
                         verts.append(s_verts[i])
-                        #print(s_verts[i])
                     vert_translation_list[i] = len(verts)-1
-                #print(s_verts)
+
+                    
                 ## Get all relevant info from each vert and add it to the GBX Model Part
-                
                 t_verts            = t_part.uncompressed_vertices.STEPTREE
                 vertex_format      = s_permutation.format_info.vertex_format
                 compression_format = s_permutation.format_info.compression_format
@@ -362,13 +392,17 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
                 # Calculate the centroid translation by averaging all vertices!
                 t_part.centroid_translation[:] = [0.0,0.0,0.0]
                 for v in t_verts:
+                    #First 3 indices in a vertex are the translation.
                     for c in range(3):
-                        #First 3 indices in a vertex are the translation.
                         t_part.centroid_translation[c] += v[c]
                 for c in range(3):
                     t_part.centroid_translation[c] /= len(t_verts)
-            
-            
+            if do_output: print("done")
+        
+    if do_output:
+        print("Setting up shaders...", end='')
+        sys.stdout.flush()
+    
     t_shaders = target.shaders.STEPTREE
     s_shaders = source.shaders_header.STEPTREE
     shaders_already_exist = []
@@ -381,7 +415,9 @@ def AmfToMod2(amf_model, purge_fixups, do_output):
                 exists[0][1] += 1
         exists = [s_shader.name, 1]
         shaders_already_exist.append(exists)
-        
+    if do_output:    
+        print("done")
+        sys.stdout.flush()
     return gbx_model
     
 #Only run this if the script is ran directly
@@ -390,6 +426,9 @@ if __name__ == '__main__':
     
     #Initialise startup arguments
     parser = ArgumentParser(description='Converter for AMF models to GBX models.')
+    parser.add_argument('-p', '--purge', dest='purge', action='store_const',
+                        const=True, default=False,
+                        help='Purges helper bones like fixups, pedestals, jiggle, aim.')
     parser.add_argument('amf', metavar='amf', type=str,
                         help='The AMF file we want to convert to a GBX model.')
     parser.add_argument('output', metavar='output', type=str,
@@ -406,7 +445,7 @@ if __name__ == '__main__':
     print("Format version:", amf.data.version)
     sys.stdout.flush()
 
-    gbx_model = AmfToMod2(amf, True, True)
+    gbx_model = AmfToMod2(amf, args.purge, True)
     
     print("Saving GBX model tag...", end='')
     sys.stdout.flush()

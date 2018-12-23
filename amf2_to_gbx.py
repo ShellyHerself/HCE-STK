@@ -3,6 +3,10 @@ from reclaimer.hek.defs.objs.matrices import multiply_quaternions
 from defs.amf import amf_def
 from shared.model_functions import TrianglesToStrips
 from shared.model_functions import CalcVertBiNormsAndTangents
+from shared.model_functions import InvertQuat
+from shared.model_functions import GetAbsNodetransforms
+from shared.model_functions import SetRelNodetransforms
+from shared.struct_functions import CreateCutDownListUsingLeftoverIds
 import copy
 import sys
 import time
@@ -17,10 +21,6 @@ remove_nodes_names_list = ("pedestal",
                            "aim_pitch",
                            "aim_yaw")
                           
-
-
-def amf_quat_to_gbx_quat(quat):
-    return -quat[0], -quat[1], -quat[2], quat[3]
 
 # Converts an AMF model into a GBX model.
 def AmfToMod2(amf_model, purge_helpers, do_output):
@@ -91,7 +91,7 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
         t_node.translation.x        = s_node.position.x / 100
         t_node.translation.y        = s_node.position.y / 100
         t_node.translation.z        = s_node.position.z / 100
-        t_node.rotation[:]          = amf_quat_to_gbx_quat(s_node.orientation)
+        t_node.rotation[:]          = InvertQuat(s_node.orientation)
         t_node.distance_from_parent = math.sqrt(t_node.translation[0]**2+t_node.translation[1]**2+t_node.translation[2]**2)
         
     if purge_helpers:
@@ -99,26 +99,31 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
             print("Calculating new node positions and rotations...", end='')
             sys.stdout.flush()
         leftover_nodes = list(set(node_id_translations))
+        
         for i in range(len(node_id_translations)):
             for j in range(len(leftover_nodes)):
                 if leftover_nodes[j] == node_id_translations[i]:
                     node_id_translations[i] = j
                     break
-                    
-        new_nodes = []
-        old_nodes = []
-        old_nodes[:] = t_nodes[:]
-        for i in range(len(leftover_nodes)):
-            new_nodes.append(copy.deepcopy(old_nodes[leftover_nodes[i]]))
-            new_node = new_nodes[-1]
-            
+        
+        
+        old_nodes = t_nodes
+        old_node_transforms = GetAbsNodetransforms(old_nodes)
+        
+        new_nodes = CreateCutDownListUsingLeftoverIds(old_nodes, leftover_nodes)[:]
+        new_node_transforms = CreateCutDownListUsingLeftoverIds(old_node_transforms, leftover_nodes)
+        
+        # Find the right node to parent to
+        for new_node in new_nodes:
+            found = False
             while new_node.parent_node != -1 and is_node_purged_list[new_node.parent_node] != False:
                 new_node.rotation[:] = multiply_quaternions(list(new_node.rotation[:]), list(old_nodes[new_node.parent_node].rotation[:]))
                 new_node.parent_node = old_nodes[new_node.parent_node].parent_node
 
             if new_node.parent_node != -1:
                 new_node.parent_node = node_id_translations[new_node.parent_node]
-            
+        
+        # Find child and sibling nodes
         for i in range(len(new_nodes)-1):
             new_nodes[i].next_sibling_node = -1
             if new_nodes[i].parent_node == new_nodes[i+1].parent_node:
@@ -130,10 +135,11 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
                     new_nodes[i].first_child_node = j
                     break
         
-        new_nodes[-1].next_sibling_node = -1
-        new_nodes[-1].first_child_node = -1
+        
+        new_nodes = SetRelNodetransforms(new_nodes, new_node_transforms)
         
         t_nodes[:] = new_nodes[:]
+        
         if do_output:
             print("\nNode purging lowered the node count from %d to %d"
                   % (len(old_nodes), len(new_nodes)))
@@ -172,7 +178,7 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
             t_instance.translation.x = s_instance.position.x / 100
             t_instance.translation.y = s_instance.position.y / 100
             t_instance.translation.z = s_instance.position.z / 100
-            t_instance.rotation[:] = amf_quat_to_gbx_quat(s_instance.orientation)
+            t_instance.rotation[:] = InvertQuat(s_instance.orientation)
             
             if purge_helpers:
                 while t_instance.node_index != -1 and is_node_purged_list[t_instance.node_index] != False:

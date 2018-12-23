@@ -1,5 +1,15 @@
 from reclaimer.model.stripify import Stripifier
+from reclaimer.hek.defs.objs.matrices import quaternion_to_matrix as QuaternionToMatrix
+from reclaimer.hek.defs.objs.matrices import matrix_to_quaternion as MatrixToQuaternion
+from reclaimer.hek.defs.objs.matrices import multiply_quaternions as MultiplyQuaternions
+from reclaimer.hek.defs.objs.matrices import Matrix
+import copy
 import math
+
+def InvertQuat(quat):
+    return -quat[0], -quat[1], -quat[2], quat[3]
+def InvertQuat2(quat):
+    return -quat[0], -quat[1], -quat[2], -quat[3]
 
 MAX_STRIP_LEN = 32763 * 3
 def TrianglesToStrips(triangles_list):
@@ -99,3 +109,102 @@ def CalcVertBiNormsAndTangents(gbx_verts, triangles):
             vert.tangent_i = t[0] / t[3]
             vert.tangent_j = t[1] / t[3]
             vert.tangent_k = t[2] / t[3]
+
+    
+# Takes a nodes STEPTREE and returns the absolute transformations
+# In a list with the structure [absolute_position, absulute_rotation_matrix]
+def GetAbsNodetransforms(node_list):
+    nodes = node_list
+    node_transforms = []
+    
+    for node in nodes:
+        translation = node.translation
+        rotation = node.rotation
+        x, y, z = translation[:]
+        this_translation = copy.deepcopy(translation)
+        this_rotation = QuaternionToMatrix(*rotation)
+        
+        if node.parent_node >= 0:
+            parent = node_transforms[node.parent_node]
+            translation = Matrix((z, y, z))
+            
+            parent_rotation = parent[1]
+            this_rotation = parent_rotation * this_rotation
+            
+            translation = parent_rotation * translation
+            x = translation[0][0] + parent[0][0]
+            y = translation[1][0] + parent[0][1]
+            z = translation[2][0] + parent[0][2]
+            
+        this_translation[:] = [x, y, z]
+        node_transforms.append([this_translation, this_rotation])
+
+    return node_transforms
+
+# Takes a nodes STEPTREE and a set of node transforms [absolute_position, absulute_rotation_matrix] and populates the nodes with proper relative positions and rotations.
+def SetRelNodetransforms(node_list, node_transforms):
+    assert len(node_list) == len(node_transforms), "node_list's length and node_transforms's lengths don't match.\n Can't properly execute function."
+    
+    nodes = copy.deepcopy(node_list)
+    
+    for i in range(len(nodes)):
+        node = nodes[i]
+        abs_pos, abs_rot = node_transforms[i][:]
+        
+        if node.parent_node != -1:
+            parent_abs_pos, parent_abs_rot = node_transforms[node.parent_node][:]
+        
+            node_rel_pos = Matrix((abs_pos[0] - parent_abs_pos[0],
+                                   abs_pos[1] - parent_abs_pos[1],
+                                   abs_pos[2] - parent_abs_pos[2]))
+            node_rel_pos = parent_abs_rot.inverse * node_rel_pos
+            node.translation.x = node_rel_pos[0][0]
+            node.translation.y = node_rel_pos[1][0]
+            node.translation.z = node_rel_pos[2][0]
+            
+            node_rel_rot = MatrixToQuaternion((parent_abs_rot.inverse * abs_rot))
+            node.rotation[:] = node_rel_rot[:]
+            
+            node.distance_from_parent = math.sqrt(node.translation.x**2 + node.translation.y**2 + node.translation.z**2)
+        else:
+            node.translation[:] = abs_pos[:]
+            node.distance_from_parent = 0.0
+            
+            node_rel_rot = MatrixToQuaternion(abs_rot)
+            node.rotation[:] = node_rel_rot[:]
+        
+        
+    return nodes
+        
+'''
+#My math test
+bone1 = [[0.0146143, 3e-008, 0.440025], [0.499999, 0.5, 0.499999, 0.500001]]
+bone2 = [[-6e-008, 5e-008, 0.0398455], [-0.276799, -0.960126, -0.010875, -0.037722]]
+#print("bone1 before:\n", bone1)
+print("bone2 before:\n", bone2)
+print("")
+bone1_pos_mat = Matrix((bone1[0][0], bone1[0][1], bone1[0][2]))
+bone2_pos_mat = Matrix((bone2[0][0], bone2[0][1], bone2[0][2]))
+bone1_rot_mat = QuaternionToMatrix(*InvertQuat([bone1[1][0], bone1[1][1], bone1[1][2], bone1[1][3]]))
+bone2_rot_mat = QuaternionToMatrix(*InvertQuat([bone2[1][0], bone2[1][1], bone2[1][2], bone2[1][3]]))
+
+
+bone2_abs_rot_mat = bone1_rot_mat * bone2_rot_mat
+bone2_unrot_pos_mat = bone1_rot_mat * bone2_pos_mat
+bone2_abs_pos = [bone1[0][0] + bone2_unrot_pos_mat[0][0],
+                 bone1[0][1] + bone2_unrot_pos_mat[1][0],
+                 bone1[0][2] + bone2_unrot_pos_mat[2][0]]
+bone2_abs_rot = MatrixToQuaternion(bone2_abs_rot_mat)
+bone2_between = [bone2_abs_pos, list(bone2_abs_rot)]
+print("bone2 between:\n", bone2_between)
+print("")
+
+bone2_rel_pos = [bone2_between[0][0] - bone1[0][0],
+                 bone2_between[0][1] - bone1[0][1],
+                 bone2_between[0][2] - bone1[0][2]]
+bone2_rel_pos = bone1_rot_mat.inverse * Matrix(bone2_rel_pos)
+bone2_after = [bone2_rel_pos, list(InvertQuat(MatrixToQuaternion((bone1_rot_mat.inverse * bone2_abs_rot_mat))))]
+
+print("bone2 after:\n", bone2_after)
+print("")
+'''

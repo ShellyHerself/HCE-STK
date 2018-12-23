@@ -120,23 +120,21 @@ def GetAbsNodetransforms(node_list):
     for node in nodes:
         translation = node.translation
         rotation = node.rotation
-        x, y, z = translation[:]
         this_translation = copy.deepcopy(translation)
         this_rotation = QuaternionToMatrix(*rotation)
         
         if node.parent_node >= 0:
             parent = node_transforms[node.parent_node]
-            translation = Matrix((z, y, z))
+            translation = Matrix(this_translation[:])
             
             parent_rotation = parent[1]
             this_rotation = parent_rotation * this_rotation
             
             translation = parent_rotation * translation
-            x = translation[0][0] + parent[0][0]
-            y = translation[1][0] + parent[0][1]
-            z = translation[2][0] + parent[0][2]
-            
-        this_translation[:] = [x, y, z]
+            this_translation.x = translation[0][0] + parent[0][0]
+            this_translation.y = translation[1][0] + parent[0][1]
+            this_translation.z = translation[2][0] + parent[0][2]
+        
         node_transforms.append([this_translation, this_rotation])
 
     return node_transforms

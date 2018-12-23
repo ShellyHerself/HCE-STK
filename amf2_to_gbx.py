@@ -142,7 +142,7 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
         
         if do_output:
             print("\nNode purging lowered the node count from %d to %d"
-                  % (len(old_nodes), len(new_nodes)))
+                  % (len(s_nodes), len(t_nodes)))
         
     
     if len(t_nodes) > 62:

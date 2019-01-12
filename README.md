@@ -1,4 +1,6 @@
 # HCE - Shelly's Tool Kit
-Tools for use with the Halo Editing kit. STK is made to automate tasks that otherwise would take hours of tedious work.
+A command line tool-set for use with the Halo Custom Edition Editing Kit, made to automate and cut down on tasks that normally require a lot of time consuming manual work in different programs, without creative interference.
 
-Requires the reclaimer library, you can get it by downloading the MEK.
+This helps people who make things for the game by cutting down the work they need to do. Which is important as development is usually handled by only a really small team or single person.
+
+This project requires the reclaimer library, you can get it by downloading the MEK.

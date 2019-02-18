@@ -8,9 +8,7 @@ import math
 
 def InvertQuat(quat):
     return -quat[0], -quat[1], -quat[2], quat[3]
-def InvertQuat2(quat):
-    return -quat[0], -quat[1], -quat[2], -quat[3]
-
+    
 MAX_STRIP_LEN = 32763 * 3
 def TrianglesToStrips(triangles_list):
     stripifier = Stripifier()
@@ -156,7 +154,7 @@ def SetRelNodetransforms(node_list, node_transforms):
             node_rel_rot = parent_abs_rot.inverse * abs_rot
             node.rotation[:] = node_rel_rot.to_quaternion().unpack()
             
-            node.distance_from_parent = node_rel_pos.magnitude()
+            node.distance_from_parent = node_rel_pos.magnitude
         else:
             node.translation[:] = abs_pos.unpack()
             node.distance_from_parent = 0.0

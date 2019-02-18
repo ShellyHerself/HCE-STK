@@ -8,9 +8,8 @@ class Vec3d(list):
         if isinstance(initializer, (list, tuple)):
             assert len(initializer) == 3
             list.__init__(self, initializer)
-        # Takes a single number and makes a Vec3d with the number in every slots.
+        # Takes a single number and makes a Vec3d with the number in each of its slots.
         # Used for math where a Vec3d is combined with a single numbers.
-        # This technically makes single numbers valid input.
         elif isinstance(initializer, (float, int)):
             list.__init__(self, [float(initializer), float(initializer), float(initializer)])
 
@@ -29,9 +28,16 @@ class Vec3d(list):
     def z(self): return self[2]
     @z.setter
     def z(self, new_val): self[2] = float(new_val)
+    
+    @property
+    def magnitude(self): return (self[0]**2 + self[1]**2 + self[2]**2)**(0.5)
+        
+    @property
+    def inverse(self): return -self
 
-    #def __str__(self):
-    #    return '[x=%s, y=%s, z=%s]' % (self[0], self[1], self[2])
+    def __str__(self):
+        assert len(self) == 3, list(self)
+        return '[x=%s, y=%s, z=%s]' % (self[0], self[1], self[2])
 
     def __copy__(self):
         return Vec3d([self[0], self[1], self[2]])
@@ -89,9 +95,6 @@ class Vec3d(list):
         and     nearly_equal(self[1], other[1])
         and     nearly_equal(self[2], other[2]))
 
-    def magnitude(self):
-        return (self[0]**2 + self[1]**2 + self[2]**2)**(0.5)
-
     def difference(self, other):
         assert isinstance(other, (list, tuple))
         assert len(other) == 3
@@ -134,6 +137,9 @@ class Quaternion(list):
     def w(self): return self[3]
     @w.setter
     def w(self, new_val): self[3] = float(new_val)
+    
+    @property
+    def inverse(self): return -self
     
     def __str__(self):
         return '[i=%f, j=%f, k=%f, w=%f]' % (self[0], self[1], self[2], self[3])
@@ -188,9 +194,6 @@ class Quaternion(list):
     def normalize(self):
         m = (self[0]**2 + self[1]**2 + self[2]**2 + self[3]**2)**0.5
         return Quaternion(self[0]*m, self[1]*m, self[2]*m, self[3]*m)
-
-    def inverse(self):
-        return -self
     
     def unpack(self):
         return self[0], self[1], self[2], self[3]

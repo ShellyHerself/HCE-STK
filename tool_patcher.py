@@ -6,7 +6,7 @@ parser.add_argument('-i', '--enable-vertex-and-index-buffer-upgrade', dest='vert
                     const=True, default=False,
                     help='Upgrades the vertex and index buffer size. Not done by default because of reports of it breaking animation import/compression.')
 parser.add_argument('tool_exe', metavar='tool_exe', type=str,
-                    help='The tool EXE we want to operate on..')
+                    help='The tool EXE we want to operate on.')
 args = parser.parse_args()
     
 import sys
@@ -32,9 +32,10 @@ if sys.version_info[0] >= 3 and sys.version_info[1] >= 2:
         
         if args.vertex_index_up:
             print("Patching vertex and index buffer size...")
-            # Change vertex-index buffer size from 32MB to 96MB
-            f.seek(0x54D56+4)
-            f.write((0x06).to_bytes(1, byteorder='big'))
+            # Change vertex-index buffer size from 32MB to 96MB.
+            # Opensauce overwrites this change, so for now it only works for vanilla maps.
+            f.seek(0x54D57)
+            f.write((0x06000000).to_bytes(4, byteorder='little'))
             
         print("Done!")
 else:

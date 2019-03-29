@@ -1,18 +1,15 @@
 from reclaimer.hek.defs.mod2 import mod2_def
 from reclaimer.hek.defs.objs.matrices import multiply_quaternions
 from defs.amf import amf_def
-from shared.model_functions import TrianglesToStrips
-from shared.model_functions import CalcVertBiNormsAndTangents
-from shared.model_functions import InvertQuat
-from shared.model_functions import GetAbsNodetransforms
-from shared.model_functions import SetRelNodetransforms
+import shared.model_functions as model
 from shared.struct_functions import CreateCutDownListUsingLeftoverIds
+from shared.classes_3d import Vec3d
 import copy
 import sys
 import time
 import math
 mod2_ext = ".gbxmodel"
-amf_ext = ".amf"
+amf_ext   = ".amf"
 
 fixup_nodes_names_list = ("fixup",
                           "jiggle")
@@ -20,7 +17,45 @@ fixup_nodes_names_list = ("fixup",
 remove_nodes_names_list = ("pedestal",
                            "aim_pitch",
                            "aim_yaw")
-                          
+                           
+dirty_rig_fix_exclude_list = ("shoulder")
+
+
+def RemoveHelpersAndFixups(amf_node_array):
+    names_to_remove = remove_nodes_names_list + fixup_nodes_names_list
+
+    node_id_translations = []
+    is_node_purged_list = []
+    
+    s_nodes = amf_node_array
+    for s_node in s_nodes:
+        # Determine what id should be in the translation list for this node index
+        fixup = False
+        if s_node.name.endswith(fixup_nodes_names_list):
+            fixup = True
+            is_node_purged_list.append(True)
+              
+            if "wrist" in s_node.name:
+                #wrist fixups are dumb and should be rerigged to their parent's parent
+                node_id_translations.append(s_nodes[s_node.parent_index].parent_index)
+            else:
+                #normal fixups should be rerigged to their parents
+                node_id_translations.append(s_node.parent_index)
+        elif s_node.name.endswith(remove_nodes_names_list):
+            fixup = True
+            is_node_purged_list.append(True)
+            
+            for i in range(len(s_nodes)):
+                if not s_nodes[i].name.endswith(names_to_remove):
+                    node_id_translations.append(i)
+                    break
+        else:
+            #Not a fixup, index should stay the same
+            is_node_purged_list.append(False)
+            node_id_translations.append(node_id)
+            
+    return node_id_translations, is_node_purged_list
+
 
 # Converts an AMF model into a GBX model.
 def AmfToMod2(amf_model, purge_helpers, do_output):
@@ -31,51 +66,20 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
     target.base_map_u_scale = 1.0
     target.base_map_v_scale = 1.0
     
-    node_id_translations = []
-    is_node_purged_list = []
-    
     if do_output:
         print("Setting up nodes...", end='')
         sys.stdout.flush()
     
     t_nodes = target.nodes.STEPTREE
     s_nodes = source.nodes_header.STEPTREE
+    
+    node_id_translations, is_node_purged_list = RemoveHelpersAndFixups(s_nodes)
+    
     for s_node in s_nodes:
         node_id = len(t_nodes) #node num if no translation is needed
         t_nodes.append()
         t_node = t_nodes[-1]
         
-        # Determine what id should be in the translation list for this node index
-        fixup = False
-        if purge_helpers:
-            if s_node.name.endswith(fixup_nodes_names_list):
-                fixup = True
-                is_node_purged_list.append(True)
-                
-                if "wrist" in s_node.name:
-                    #wrist fixups are dumb and should be rerigged to their parent's parent
-                    node_id_translations.append(s_nodes[s_node.parent_index].parent_index)
-                else:
-                    #normal fixups should be rerigged to their parents
-                    node_id_translations.append(s_node.parent_index)
-            elif s_node.name.endswith(remove_nodes_names_list):
-                fixup = True
-                is_node_purged_list.append(True)
-                
-                for i in range(len(s_nodes)):
-                    if (not s_nodes[i].name.endswith(fixup_nodes_names_list)
-                    and not s_nodes[i].name.endswith(remove_nodes_names_list)):
-                        node_id_translations.append(i)
-                        break
-            else:
-                #Not a fixup, index should stay the same
-                is_node_purged_list.append(False)
-                node_id_translations.append(node_id)
-        else:
-            #Not purging fixups, index should stay the same
-            is_node_purged_list.append(False)
-            node_id_translations.append(node_id)
-            
         if len(s_node.name) > 31:
             t_node.name = s_node.name[0:31]
             if not fixup: #We don't need to alert the user with this action if this is a fixup bone, as it will be removed.
@@ -91,8 +95,8 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
         t_node.translation.x        = s_node.position.x / 100
         t_node.translation.y        = s_node.position.y / 100
         t_node.translation.z        = s_node.position.z / 100
-        t_node.rotation[:]          = InvertQuat(s_node.orientation)
-        t_node.distance_from_parent = math.sqrt(t_node.translation[0]**2+t_node.translation[1]**2+t_node.translation[2]**2)
+        t_node.rotation[:]          = model.InvertQuat(s_node.orientation)
+        t_node.distance_from_parent = (t_node.translation[0]**2+t_node.translation[1]**2+t_node.translation[2]**2)**0.5
         
     if purge_helpers:
         if do_output:
@@ -108,7 +112,7 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
         
         
         old_nodes = t_nodes
-        old_node_transforms = GetAbsNodetransforms(old_nodes)
+        old_node_transforms = model.GetAbsNodetransforms(old_nodes)
         
         new_nodes = CreateCutDownListUsingLeftoverIds(old_nodes, leftover_nodes)[:]
         new_node_transforms = CreateCutDownListUsingLeftoverIds(old_node_transforms, leftover_nodes)
@@ -117,7 +121,6 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
         for new_node in new_nodes:
             found = False
             while new_node.parent_node != -1 and is_node_purged_list[new_node.parent_node] != False:
-                new_node.rotation[:] = multiply_quaternions(list(new_node.rotation[:]), list(old_nodes[new_node.parent_node].rotation[:]))
                 new_node.parent_node = old_nodes[new_node.parent_node].parent_node
 
             if new_node.parent_node != -1:
@@ -136,7 +139,7 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
                     break
         
         
-        new_nodes = SetRelNodetransforms(new_nodes, new_node_transforms)
+        new_nodes = model.SetRelNodetransforms(new_nodes, new_node_transforms)
         
         t_nodes[:] = new_nodes[:]
         
@@ -178,11 +181,10 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
             t_instance.translation.x = s_instance.position.x / 100
             t_instance.translation.y = s_instance.position.y / 100
             t_instance.translation.z = s_instance.position.z / 100
-            t_instance.rotation[:] = InvertQuat(s_instance.orientation)
+            t_instance.rotation[:] = model.InvertQuat(s_instance.orientation)
             
             if purge_helpers:
                 while t_instance.node_index != -1 and is_node_purged_list[t_instance.node_index] != False:
-                    t_instance.rotation[:] = multiply_quaternions(list(t_instance.rotation[:]), list(old_nodes[t_instance.node_index].rotation[:]))
                     t_instance.node_index = old_nodes[t_instance.node_index].parent_node
                     
                 if t_instance.node_index != -1:
@@ -378,9 +380,9 @@ def AmfToMod2(amf_model, purge_helpers, do_output):
                     triangle[2] = vert_translation_list[triangle[2]]
                 
                 # Calculate the Binormals and Tangents of each vert
-                CalcVertBiNormsAndTangents(t_verts, triangles)
+                model.CalcVertBiNormsAndTangents(t_verts, triangles)
                 
-                triangle_strip = TrianglesToStrips(triangles)
+                triangle_strip = model.TrianglesToStrips(triangles)
                 
                 # The triangle strip needs to be divisible by 3
                 needed_padding = (3 - len(triangle_strip) % 3) % 3

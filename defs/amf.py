@@ -49,11 +49,11 @@ vertex_bounds = Struct('bounds',
     
 node = Container('node',
     CStrUtf8('name'),
-    SInt16('parent index'),
+    SInt16('parent node'),
     SInt16('child index'),
-    SInt16('sibling index'),
-    QStruct('position', INCLUDE=xyz_float),
-    QStruct('orientation', INCLUDE=ijkw_float)
+    SInt16('next sibling index'),
+    QStruct('translation', INCLUDE=xyz_float),
+    QStruct('rotation', INCLUDE=ijkw_float)
 )
     
 marker_instance = Struct('instance',

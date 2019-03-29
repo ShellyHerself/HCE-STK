@@ -2,13 +2,14 @@ from reclaimer.model.stripify import Stripifier
 from .classes_3d import Vec3d
 from .classes_3d import Quaternion
 from .classes_3d import Matrix
+import shared.struct_functions as fstruct
 
 import copy
 import math
 
-def InvertQuat(quat):
-    return -quat[0], -quat[1], -quat[2], quat[3]
-    
+
+
+
 MAX_STRIP_LEN = 32763 * 3
 def TrianglesToStrips(triangles_list):
     stripifier = Stripifier()
@@ -25,6 +26,9 @@ def TrianglesToStrips(triangles_list):
              "linking all strips.") % (MAX_STRIP_LEN, len(tri_strip)), )
 
     return list(tri_strip)
+    
+    
+    
     
 def CalcVertBiNormsAndTangents(gbx_verts, triangles):
     verts = gbx_verts
@@ -133,7 +137,9 @@ def GetAbsNodetransforms(node_list):
     
     return node_transforms
 
-# Takes a nodes STEPTREE and a set of node transforms [absolute_position, absulute_rotation_matrix] and populates the nodes with proper relative positions and rotations.
+    
+# Takes a nodes STEPTREE and a set of node transforms [absolute_position, absulute_rotation_matrix]
+# and populates the nodes with proper relative positions and rotations.
 def SetRelNodetransforms(node_list, node_transforms):
     assert len(node_list) == len(node_transforms), "node_list's length and node_transforms's lengths don't match."
 
@@ -161,6 +167,49 @@ def SetRelNodetransforms(node_list, node_transforms):
             
             node.rotation[:] = abs_rot.to_quaternion().unpack()
         
-        
     return nodes
+    
+    
+    
+# Takes a list of nodes and sorts it the way Halo likes them. Per level, alphabetical.
+def SortNodes(node_list):
+    new_nodes = copy.copy(node_list).clear()
+    
+    levels = [[]]
+    ids_to_names = []
+    for i in range(len(node_list)):
+        node   = node_list[i]
+        depth  = 0
+        parent = node.parent_node
         
+        # loop from our current node to the top so we can get it's depth.
+        while node != -1:
+            assert depth < 64, "node_list given to SortNodes() has an infinite loop in it, or has way too many nodes."
+            parent = node_list[parent].parent_node
+            depth += 1
+        # afaik I can't really guess the amount of levels we'll have at the end beforehand, so I resorted to this.
+        while len(levels) <= depth:
+            levels.append([])
+            
+        levels[depth].append(node)
+        ids_to_names.append(node.name)
+        
+    names_to_new_ids = dict()
+    old_ids_to_new_ids = [0] * len(node_list)
+    for level in levels:
+        level = fstruct.SortSteptreeByNames(level)
+        
+        for node in level:
+            cur_node_id = len(new_nodes)
+            old_parent_id = node.parent_node
+            if old_parent_id != -1:
+                node.parent_node = names_to_new_ids[ids_to_names[old_parent_id]]
+            new_nodes.append(node)
+            names_to_new_ids.setdefault(node.name, cur_node_id)
+            
+    
+    return new_nodes, translation_list
+    
+    
+    
+    

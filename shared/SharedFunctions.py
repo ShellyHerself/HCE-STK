@@ -11,5 +11,5 @@ def GetAbsFilepath(filepath, extension):
         filepath = filepath
     else:
         sys.exit("The file " + filepath + extension + " does not exist.\n")
-    
+
     return filepath

@@ -97,7 +97,7 @@ def MapGetChecksum(map_filepath):
 #Only run this if the script is ran directly
 if __name__ == '__main__':
     from argparse import ArgumentParser
-    
+
     #Initialise startup arguments
     parser = ArgumentParser(description='Halo CE Mapfile checksum spoofer. Used to make new versions of maps compatible with an old version so they can play online together. If no checksum source is specified we will take the checksum number from the input map header and make sure the map gives this same checksum when calculated by the game.')
     parser.add_argument('-i', '--input', dest='map_in', type=str,
@@ -111,26 +111,26 @@ if __name__ == '__main__':
     parser.add_argument('output', metavar='map_out', type=str,
                         help="The map file we'll be saving our changes to.")
     args = parser.parse_args()
-    
+
     from shared.SharedFunctions import GetAbsFilepath
-    
+
     map_out = args.output + ".map"
-    
+
     if args.map_in:
         map_in = GetAbsFilepath(args.map_in, ".map") + ".map"
     else:
         map_in = map_out
-        
+
     if args.checksum:
         checksum = args.checksum
         try:
             crc = int(checksum.replace(" ", ""), 16)
         except ValueError:
             print("Invalid crc checksum. Must be an 8 character hex string")
-        
+
     if args.checksum_map:
         checksum_map = GetAbsFilepath(args.checksum_map, ".map") + ".map"
-        
+
     if args.checksum:
         print("Spoofing map using provided checksum number.")
         sys.stdout.flush()
@@ -148,5 +148,5 @@ if __name__ == '__main__':
         sys.stdout.flush()
         header_checksum, calculated_checksum = MapGetChecksum(map_in)
         MapSpoofChecksum(map_in, map_out, header_checksum)
-    
+
     print("finished\n")

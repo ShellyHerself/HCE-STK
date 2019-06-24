@@ -28,10 +28,10 @@ class Vec3d(list):
     def z(self): return self[2]
     @z.setter
     def z(self, new_val): self[2] = float(new_val)
-    
+
     @property
     def magnitude(self): return (self[0]**2 + self[1]**2 + self[2]**2)**(0.5)
-        
+
     @property
     def inverse(self): return -self
 
@@ -41,10 +41,10 @@ class Vec3d(list):
 
     def __copy__(self):
         return Vec3d([self[0], self[1], self[2]])
-        
+
     def __deepcopy__(self, memo):
         return Vec3d([self[0], self[1], self[2]])
-        
+
     def __eq__(self, other):
         other = Vec3d(other)
         return (self[0] == other[0] and self[1] == other[1] and self[2] == other[2])
@@ -105,19 +105,19 @@ class Vec3d(list):
 
     def unpack(self):
         return self[0], self[1], self[2]
-        
+
     def to_matrix(self):
         return Matrix((self[0], self[1], self[2]))
 
-        
+
 class Quaternion(list):
-    
+
     def __init__(self, initializer=()):
         assert isinstance(initializer, (list, tuple))
         if isinstance(initializer, (list, tuple)):
             assert len(initializer) == 4
             list.__init__(self, [float(initializer[0]), float(initializer[1]), float(initializer[2]), float(initializer[3])])
-            
+
     @property
     def i(self): return self[0]
     @i.setter
@@ -132,15 +132,15 @@ class Quaternion(list):
     def k(self): return self[2]
     @k.setter
     def k(self, new_val): self[2] = float(new_val)
-    
+
     @property
     def w(self): return self[3]
     @w.setter
     def w(self, new_val): self[3] = float(new_val)
-    
+
     @property
     def inverse(self): return -self
-    
+
     def __str__(self):
         return '[i=%f, j=%f, k=%f, w=%f]' % (self[0], self[1], self[2], self[3])
 
@@ -150,7 +150,7 @@ class Quaternion(list):
     def __eq__(self, other):
         assert len(other) == 4
         return ((self[0] == other[0] and self[1] == other[1] and self[2] == other[2]) and ((self[3] == other[3]) or (self[3] == -other[3])))
-        
+
     def __ne__(self, other):
         return (not self == other)
 
@@ -170,15 +170,15 @@ class Quaternion(list):
 
     def __truediv__(self, other):
         NotImplementedError
-        
+
     def __neg__(self):
-        return Quaternion(-self[0], -self[1], -self[2], self[3])
-        
+        return Quaternion([-self[0], -self[1], -self[2], self[3]])
+
     __rmul__ = __mul__
     __rsub__ = __sub__
     __rmul__ = __mul__
     __rtruediv__ = __truediv__
-    
+
     def append(self, other):
         NotImplementedError
 
@@ -190,14 +190,14 @@ class Quaternion(list):
 
     def clear(self):
         return Quaternion([0.0, 0.0, 0.0, 1.0])
-    
+
     def normalize(self):
         m = (self[0]**2 + self[1]**2 + self[2]**2 + self[3]**2)**0.5
         return Quaternion(self[0]*m, self[1]*m, self[2]*m, self[3]*m)
-    
+
     def unpack(self):
         return self[0], self[1], self[2], self[3]
-    
+
     def to_matrix(self):
         i,j,k,w = self.unpack()
         return Matrix([
@@ -205,7 +205,9 @@ class Quaternion(list):
         (2*(i*j - k*w),         2*(0.5 - k*k - i*i),   2*(j*k + i*w)),
         (2*(i*k + j*w),         2*(j*k - i*w),         2*(0.5 - i*i - j*j)),
         ])
-        
+
+
+# I stole most of this from Moses:
 
 class MatrixRow(list):
     '''Implements the minimal methods required for messing with matrix rows'''
@@ -407,7 +409,7 @@ class Matrix(list):
                 for k in range(sub_matrix.width):
                     sub_matrix[j][k] = self[j+1][(i + k + 1) % self.width]
             d += self[0][i] * sub_matrix.determinant
-            
+
         return d
 
     @property
@@ -559,9 +561,6 @@ class Matrix(list):
             w = (m10 - m01) / s
 
         return Quaternion((i, j, k, w))
-    
+
     def to_vec3d(self):
         return Vec3d((self[0][0], self[1][0], self[2][0]))
-    
-    
-

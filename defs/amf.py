@@ -29,24 +29,24 @@ def amf_newer_than_11(parent=None, **kwargs):
     if parent.get_root().data.version > 1.1:
         return True
     return False
-    
+
 float_bounds = QStruct('bounds',
     Float('lower'), Float('upper'), ORIENT='h'
-    )
+)
 
 general_header = QStruct('header',
     SInt32('field count', VISIBLE=False),
     SInt32('array address', VISIBLE=False)
-    )
-    
+)
+
 vertex_bounds = Struct('bounds',
     QStruct('x', INCLUDE=float_bounds),
     QStruct('y', INCLUDE=float_bounds),
     QStruct('z', INCLUDE=float_bounds),
     QStruct('u', INCLUDE=float_bounds),
     QStruct('v', INCLUDE=float_bounds)
-    )
-    
+)
+
 node = Container('node',
     CStrUtf8('name'),
     SInt16('parent node'),
@@ -55,7 +55,7 @@ node = Container('node',
     QStruct('translation', INCLUDE=xyz_float),
     QStruct('rotation', INCLUDE=ijkw_float)
 )
-    
+
 marker_instance = Struct('instance',
     SInt8('region index'),
     SInt8('permutation index'),
@@ -63,7 +63,7 @@ marker_instance = Struct('instance',
     QStruct('position', INCLUDE=xyz_float),
     QStruct('orientation', INCLUDE=ijkw_float)
 )
-    
+
 marker = Container('marker',
     CStrUtf8('name'),
     Struct('marker instances',
@@ -209,7 +209,7 @@ vertices = Container('vertices',
     ),
     POINTER='.array_address'
 )
-    
+
 two_byte_face = Container('face',
     UInt16('v1'), UInt16('v2'), UInt16('v3')
 )
@@ -226,7 +226,7 @@ four_byte_face_array = Array('faces',
     SIZE = '.field_count',
     SUB_STRUCT=four_byte_face
 )
-    
+
 faces = Switch('faces',
         CASE=is_vert_count_over_65535,
         CASES={True: four_byte_face_array,
@@ -290,12 +290,12 @@ region = Container('region',
         )
     )
 )
-    
+
 def is_path_valid(parent=None, **kwargs):
     if parent.filepath != 'null':
         return True
     return False
-    
+
 bitmap = Container('bitmap',
     CStrUtf8('filepath'),
     Switch('tiling',
@@ -357,8 +357,8 @@ shader = Container('shader',
                True:terrain_shader}
     )
 )
-    
-    
+
+
 amf_def = TagDef('amf',
     StrRawUtf8('header', SIZE = 4, DEFAULT='AMF!' ),
     Float('version', DEFAULT=2.1), ## should max be 2.1
@@ -397,5 +397,5 @@ amf_def = TagDef('amf',
     ),
     ext='.amf', endian='<'
 )
-    
+
 def get(): return amf_def

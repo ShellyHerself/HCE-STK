@@ -12,6 +12,14 @@ args = parser.parse_args()
 import sys
 if sys.version_info[0] >= 3 and sys.version_info[1] >= 2:
     with open(args.tool_exe, 'r+b') as f:
+    
+        print("Patching singeplayer map compilation for multi language support...")
+        
+        # This fixes an issue where singleplayer and UI maps were compiled
+        # with settings that would only make them work for one set of data maps.
+        
+        f.seek(0x55451)
+        f.write((0).to_bytes(1))
         
         print("Patching max mapfile size...")
         

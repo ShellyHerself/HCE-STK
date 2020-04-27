@@ -19,7 +19,7 @@ if sys.version_info[0] >= 3 and sys.version_info[1] >= 2:
         # with settings that would only make them work for one set of data maps.
         
         f.seek(0x55451)
-        f.write((0).to_bytes(1))
+        f.write((0).to_bytes(1, byteorder='little'))
         
         print("Patching max mapfile size...")
         
